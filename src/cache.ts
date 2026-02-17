@@ -1,4 +1,4 @@
-import { PullRequest } from './adapters/types';
+import { PullRequest } from "./adapters/types";
 
 export class PRCache {
   private cache: Map<string, PullRequest[]> = new Map();

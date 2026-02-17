@@ -1,5 +1,5 @@
-import { GitHubAdapter } from './github';
-import { PullRequestProvider } from './types';
+import { GitHubAdapter } from "./github";
+import { PullRequestProvider } from "./types";
 
 export class AdapterFactory {
   static getProvider(): PullRequestProvider {
