@@ -10,12 +10,6 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [
-    "onCommand:pullgod.viewPullRequests",
-    "onStartupFinished",
-    "onLanguage:markdown",
-    "*"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
@@ -31,6 +25,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src",
+    "format": "prettier --write .",
     "test": "vscode-test"
   },
   "devDependencies": {
