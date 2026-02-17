@@ -9,13 +9,15 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:pullgod.viewPullRequests"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "pullgod.helloWorld",
-        "title": "Hello World"
+        "command": "pullgod.viewPullRequests",
+        "title": "Pullgod > View Pull Requests"
       }
     ]
   },
