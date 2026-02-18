@@ -12,4 +12,5 @@ export interface PullRequest {
 export interface PullRequestProvider {
   listPullRequests(): Promise<PullRequest[]>;
   checkoutPullRequest(pr: PullRequest): Promise<void>;
+  getPullRequestDiff(pr: PullRequest): Promise<string>;
 }

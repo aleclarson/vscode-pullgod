@@ -77,6 +77,19 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage(
               `Checked out PR #${selected.pr.number}`,
             );
+
+            try {
+              const diff = await provider.getPullRequestDiff(selected.pr);
+              const doc = await vscode.workspace.openTextDocument({
+                content: diff,
+                language: "diff",
+              });
+              await vscode.window.showTextDocument(doc);
+            } catch (error) {
+              vscode.window.showErrorMessage(
+                `Error opening pull request diff: ${error}`,
+              );
+            }
           } catch (error) {
             vscode.window.showErrorMessage(
               `Error checking out pull request: ${error}`,

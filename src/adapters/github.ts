@@ -1,27 +1,24 @@
-import * as cp from "child_process";
 import { PullRequest, PullRequestProvider } from "./types";
-import * as vscode from "vscode";
+import { Executor, NodeExecutor, Workspace, VSCodeWorkspace } from "./system";
 
 export class GitHubAdapter implements PullRequestProvider {
+  private executor: Executor;
+  private workspace: Workspace;
+
+  constructor(
+    executor: Executor = new NodeExecutor(),
+    workspace: Workspace = new VSCodeWorkspace(),
+  ) {
+    this.executor = executor;
+    this.workspace = workspace;
+  }
+
   private async exec(command: string, args: string[]): Promise<string> {
-    const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceFolder = this.workspace.getWorkspaceFolder();
     if (!workspaceFolder) {
       throw new Error("Please open a project folder in VS Code first.");
     }
-    return new Promise((resolve, reject) => {
-      cp.execFile(
-        command,
-        args,
-        { cwd: workspaceFolder },
-        (error, stdout, stderr) => {
-          if (error) {
-            reject(stderr || error.message);
-            return;
-          }
-          resolve(stdout.trim());
-        },
-      );
-    });
+    return this.executor.exec(command, args, workspaceFolder);
   }
 
   private async checkGhInstalled(): Promise<void> {
@@ -83,5 +80,11 @@ export class GitHubAdapter implements PullRequestProvider {
     await this.checkGhInstalled();
     await this.checkIsGitHubRepo();
     await this.exec("gh", ["pr", "checkout", pr.number.toString()]);
+  }
+
+  async getPullRequestDiff(pr: PullRequest): Promise<string> {
+    await this.checkGhInstalled();
+    await this.checkIsGitHubRepo();
+    return this.exec("gh", ["pr", "diff", pr.number.toString()]);
   }
 }
