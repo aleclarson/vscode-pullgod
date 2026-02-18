@@ -2,12 +2,53 @@ import * as vscode from "vscode";
 import { AdapterFactory } from "./adapters/factory";
 import { PRCache } from "./cache";
 import { PullRequest } from "./adapters/types";
+import { DiffContentProvider } from "./providers/diffContentProvider";
 
 const cache = new PRCache();
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
   const provider = AdapterFactory.getProvider();
+
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(
+      "pullgod-pr",
+      new DiffContentProvider(provider),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "pullgod.openPRInBrowser",
+      async (uri?: vscode.Uri) => {
+        let prNumber: number | undefined;
+
+        if (uri && uri.scheme === "pullgod-pr") {
+          const params = new URLSearchParams(uri.query);
+          const num = params.get("number");
+          if (num) {
+            prNumber = parseInt(num, 10);
+          }
+        }
+
+        if (prNumber) {
+          try {
+            await provider.openPullRequestOnWeb({
+              number: prNumber,
+            } as PullRequest);
+          } catch (error) {
+            vscode.window.showErrorMessage(
+              `Error opening PR on GitHub: ${error}`,
+            );
+          }
+        } else {
+          vscode.window.showErrorMessage(
+            "Could not determine PR number from context.",
+          );
+        }
+      },
+    ),
+  );
 
   const disposable = vscode.commands.registerCommand(
     "pullgod.viewPullRequests",
@@ -79,12 +120,14 @@ export function activate(context: vscode.ExtensionContext) {
             );
 
             try {
-              const diff = await provider.getPullRequestDiff(selected.pr);
-              const doc = await vscode.workspace.openTextDocument({
-                content: diff,
-                language: "diff",
+              const uri = vscode.Uri.from({
+                scheme: "pullgod-pr",
+                path: `PR-${selected.pr.number}.diff`,
+                query: `number=${selected.pr.number}`,
               });
-              await vscode.window.showTextDocument(doc);
+              const doc = await vscode.workspace.openTextDocument(uri);
+              await vscode.languages.setTextDocumentLanguage(doc, "diff");
+              await vscode.window.showTextDocument(doc, { preview: true });
             } catch (error) {
               vscode.window.showErrorMessage(
                 `Error opening pull request diff: ${error}`,
