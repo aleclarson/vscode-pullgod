@@ -16,8 +16,22 @@
       {
         "command": "pullgod.viewPullRequests",
         "title": "Pullgod: View Pull Requests"
+      },
+      {
+        "command": "pullgod.openPRInBrowser",
+        "title": "Open PR in Browser",
+        "icon": "$(github)"
       }
-    ]
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "pullgod.openPRInBrowser",
+          "group": "navigation",
+          "when": "resourceScheme == pullgod-pr"
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "pnpm run compile",

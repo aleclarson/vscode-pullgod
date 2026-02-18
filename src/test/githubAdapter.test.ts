@@ -64,4 +64,22 @@ suite("GitHubAdapter Unit Test Suite", () => {
     const diff = await adapter.getPullRequestDiff(pr);
     assert.strictEqual(diff, "diff content");
   });
+
+  test("openPullRequestOnWeb should run gh pr view --web", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    executor.setResponse("gh", ["pr", "view", "123", "--web"], "");
+
+    await adapter.openPullRequestOnWeb(pr);
+    // If no error is thrown, the test passes (mock executor would throw if command mismatch)
+  });
 });
