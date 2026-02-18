@@ -88,9 +88,13 @@ export class GitHubAdapter implements PullRequestProvider {
     return this.exec("gh", ["pr", "diff", pr.number.toString()]);
   }
 
-  async openPullRequestOnWeb(pr: PullRequest): Promise<void> {
+  async openPullRequestOnWeb(pr?: PullRequest): Promise<void> {
     await this.checkGhInstalled();
     await this.checkIsGitHubRepo();
-    await this.exec("gh", ["pr", "view", pr.number.toString(), "--web"]);
+    if (pr) {
+      await this.exec("gh", ["pr", "view", pr.number.toString(), "--web"]);
+    } else {
+      await this.exec("gh", ["pr", "view", "--web"]);
+    }
   }
 }
