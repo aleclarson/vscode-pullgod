@@ -12,11 +12,29 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
     }
 
     try {
-      // Create a partial PR object with just the number, as getPullRequestDiff only needs that.
-      // In a real scenario, we might want to fetch the full PR details, but for diffing,
-      // the number is sufficient for `gh pr diff`.
+      // Create a partial PR object with just the number, as the adapter only needs that.
       const pr = { number: parseInt(prNumber, 10) } as PullRequest;
-      return await this.provider.getPullRequestDiff(pr);
+      const [viewJson, diff] = await Promise.all([
+        this.provider.getPullRequestView(pr),
+        this.provider.getPullRequestDiff(pr),
+      ]);
+
+      const prData = JSON.parse(viewJson);
+
+      const markdown = [
+        `# #${prData.number} ${prData.title}`,
+        `**${prData.author.login}** wants to merge into \`${prData.baseRefName}\` from \`${prData.headRefName}\``,
+        `State: **${prData.state}** | [View on GitHub](${prData.url})`,
+        "",
+        prData.body,
+        "",
+        "## Diff",
+        "```diff",
+        diff,
+        "```",
+      ].join("\n");
+
+      return markdown;
     } catch (error) {
       return `Error fetching diff: ${error}`;
     }

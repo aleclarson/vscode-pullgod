@@ -65,6 +65,34 @@ suite("GitHubAdapter Unit Test Suite", () => {
     assert.strictEqual(diff, "diff content");
   });
 
+  test("getPullRequestView should return view output", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    executor.setResponse(
+      "gh",
+      [
+        "pr",
+        "view",
+        "123",
+        "--json",
+        "number,title,body,author,state,url,createdAt,updatedAt,headRefName,baseRefName",
+      ],
+      '{"number":123,"title":"Test PR"}',
+    );
+
+    const view = await adapter.getPullRequestView(pr);
+    assert.strictEqual(view, '{"number":123,"title":"Test PR"}');
+  });
+
   test("openPullRequestOnWeb should run gh pr view --web", async () => {
     const pr: PullRequest = {
       id: "1",
