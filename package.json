@@ -18,7 +18,7 @@
         "title": "Pullgod: View Pull Requests"
       },
       {
-        "command": "pullgod.openPRInBrowser",
+        "command": "pullgod.openInBrowser",
         "title": "Open PR in Browser",
         "icon": "$(github)"
       }
@@ -26,7 +26,7 @@
     "menus": {
       "editor/title": [
         {
-          "command": "pullgod.openPRInBrowser",
+          "command": "pullgod.openInBrowser",
           "group": "navigation",
           "when": "resourceScheme == pullgod-pr"
         }

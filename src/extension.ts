@@ -19,32 +19,22 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand(
-      "pullgod.openPRInBrowser",
+      "pullgod.openInBrowser",
       async (uri?: vscode.Uri) => {
-        let prNumber: number | undefined;
+        let pr: PullRequest | undefined;
 
         if (uri && uri.scheme === "pullgod-pr") {
           const params = new URLSearchParams(uri.query);
           const num = params.get("number");
           if (num) {
-            prNumber = parseInt(num, 10);
+            pr = { number: parseInt(num, 10) } as PullRequest;
           }
         }
 
-        if (prNumber) {
-          try {
-            await provider.openPullRequestOnWeb({
-              number: prNumber,
-            } as PullRequest);
-          } catch (error) {
-            vscode.window.showErrorMessage(
-              `Error opening PR on GitHub: ${error}`,
-            );
-          }
-        } else {
-          vscode.window.showErrorMessage(
-            "Could not determine PR number from context.",
-          );
+        try {
+          await provider.openPullRequestOnWeb(pr);
+        } catch (error) {
+          vscode.window.showErrorMessage(`Error opening PR on GitHub: ${error}`);
         }
       },
     ),

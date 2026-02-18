@@ -82,4 +82,11 @@ suite("GitHubAdapter Unit Test Suite", () => {
     await adapter.openPullRequestOnWeb(pr);
     // If no error is thrown, the test passes (mock executor would throw if command mismatch)
   });
+
+  test("openPullRequestOnWeb should run gh pr view --web without PR number", async () => {
+    executor.setResponse("gh", ["pr", "view", "--web"], "");
+
+    await adapter.openPullRequestOnWeb();
+    // Success if no exception
+  });
 });
