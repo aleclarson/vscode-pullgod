@@ -112,12 +112,10 @@ export function activate(context: vscode.ExtensionContext) {
             try {
               const uri = vscode.Uri.from({
                 scheme: "pullgod-pr",
-                path: `PR-${selected.pr.number}.diff`,
+                path: `PR-${selected.pr.number}.md`,
                 query: `number=${selected.pr.number}`,
               });
-              const doc = await vscode.workspace.openTextDocument(uri);
-              await vscode.languages.setTextDocumentLanguage(doc, "diff");
-              await vscode.window.showTextDocument(doc, { preview: true });
+              await vscode.commands.executeCommand("markdown.showPreview", uri);
             } catch (error) {
               vscode.window.showErrorMessage(
                 `Error opening pull request diff: ${error}`,

@@ -13,5 +13,6 @@ export interface PullRequestProvider {
   listPullRequests(): Promise<PullRequest[]>;
   checkoutPullRequest(pr: PullRequest): Promise<void>;
   getPullRequestDiff(pr: PullRequest): Promise<string>;
+  getPullRequestView(pr: PullRequest): Promise<string>;
   openPullRequestOnWeb(pr?: PullRequest): Promise<void>;
 }
