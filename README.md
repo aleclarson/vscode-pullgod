@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="icon.png" width="128" height="128" alt="Pullgod Icon">
+</p>
+
 # Pullgod
 
 Pullgod is a VS Code extension that allows you to view and check out pull requests from your current repository using a "stale-while-revalidate" approach for speed and responsiveness.
