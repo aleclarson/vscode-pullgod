@@ -41,7 +41,8 @@
     "pretest": "pnpm run compile && pnpm run lint",
     "lint": "eslint src",
     "format": "prettier --write .",
-    "test": "vscode-test"
+    "test": "vscode-test",
+    "publish:ovsx": "ovsx publish"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.10",
@@ -50,6 +51,7 @@
     "@vscode/test-cli": "^0.0.12",
     "@vscode/test-electron": "^2.5.2",
     "eslint": "^9.39.2",
+    "ovsx": "^0.10.9",
     "prettier": "^3.8.1",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"
