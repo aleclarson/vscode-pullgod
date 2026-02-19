@@ -105,6 +105,14 @@ export function activate(context: vscode.ExtensionContext) {
             );
 
             try {
+              await vscode.commands.executeCommand(
+                "github:activePullRequest.focus",
+              );
+            } catch (error) {
+              // Ignore failure if the extension providing this command is not installed
+            }
+
+            try {
               const uri = vscode.Uri.from({
                 scheme: "pullgod-pr",
                 path: `PR-${selected.pr.number}.md`,
