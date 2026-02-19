@@ -10,9 +10,9 @@ export interface QuickPickItemProps {
 
 export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
   return {
-    label: `#${pr.number}`,
-    description: `${pr.title} by ${pr.author} ${timeAgo(pr.updatedAt)}`,
-    detail: `${pr.headRefName} -> ${pr.baseRefName}`,
+    label: pr.title,
+    description: timeAgo(pr.updatedAt),
+    detail: `(#${pr.number}) By ${pr.author} → "${pr.baseRefName}" branch`,
     pr: pr,
   };
 }

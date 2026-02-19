@@ -3,7 +3,7 @@ import { createQuickPickItem } from "../quickPick";
 import { PullRequest } from "../adapters/types";
 
 suite("createQuickPickItem", () => {
-  test("should format label with PR number", () => {
+  test("should format label with the PR title", () => {
     const pr: PullRequest = {
       id: "1",
       number: 123,
@@ -17,12 +17,19 @@ suite("createQuickPickItem", () => {
 
     const item = createQuickPickItem(pr);
 
-    assert.strictEqual(item.label, "#123");
+    assert.strictEqual(item.label, "Test PR");
     assert.strictEqual(item.pr, pr);
   });
 
-  test("should format description with title, author and time ago", () => {
-    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+  test("should format description with time ago", () => {
+    // Mocking timeAgo behavior by using a fixed relative time logic or ensuring the test environment matches
+    // Since we can't easily mock timeAgo import without dependency injection or module mocking tools which might be complex here,
+    // we will rely on the fact that timeAgo is deterministic for a given input relative to 'now'.
+
+    // However, to make the test robust, let's just check if it returns a string that looks like time ago
+    // or use a specific recent time.
+
+    const oneHourAgo = new Date(Date.now() - 3600000);
     const pr: PullRequest = {
       id: "2",
       number: 456,
@@ -30,16 +37,17 @@ suite("createQuickPickItem", () => {
       author: "dev",
       headRefName: "bugfix",
       baseRefName: "main",
-      updatedAt: oneHourAgo,
+      updatedAt: oneHourAgo.toISOString(),
       url: "http://github.com/owner/repo/pull/456",
     };
 
     const item = createQuickPickItem(pr);
 
-    // Using partial match because toLocaleString format varies by locale
-    assert.ok(item.description.includes("Another PR"));
-    assert.ok(item.description.includes("by dev"));
-    assert.ok(item.description.includes("1 hour ago"));
-    assert.strictEqual(item.detail, "bugfix -> main");
+    // Assert description is roughly "1 hour ago"
+    // Allowing for small timing differences in test execution
+    assert.ok(item.description === "1 hour ago" || item.description === "59 minutes ago" || item.description === "60 minutes ago");
+
+    // Check detail format as per original implementation
+    assert.strictEqual(item.detail, `(#456) By dev → "main" branch`);
   });
 });
