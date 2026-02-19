@@ -4,10 +4,9 @@ import { PRCache } from "./cache";
 import { PullRequest } from "./adapters/types";
 import { DiffContentProvider } from "./providers/diffContentProvider";
 
-const cache = new PRCache();
-
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
+  const cache = new PRCache(context.globalStorageUri.fsPath);
   const provider = AdapterFactory.getProvider();
 
   context.subscriptions.push(
