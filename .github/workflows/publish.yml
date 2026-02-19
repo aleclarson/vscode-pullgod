@@ -21,9 +21,9 @@ jobs:
     - run: pnpm install
     - run: pnpm run compile
     - run: npm install -g ovsx @vscode/vsce
-    - run: vsce publish
+    - run: vsce publish --no-dependencies
       env:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
-    - run: ovsx publish
+    - run: ovsx publish --no-dependencies
       env:
         OVSX_PAT: ${{ secrets.OVSX_PAT }}
