@@ -10,7 +10,10 @@ export function activate(context: vscode.ExtensionContext) {
   const outputChannel = vscode.window.createOutputChannel("Pullgod");
   context.subscriptions.push(outputChannel);
 
-  const cache = new PRCache(context.globalStorageUri.fsPath);
+  const storagePath = context.storageUri
+    ? context.storageUri.fsPath
+    : context.globalStorageUri.fsPath;
+  const cache = new PRCache(storagePath);
   const provider = AdapterFactory.getProvider();
 
   context.subscriptions.push(

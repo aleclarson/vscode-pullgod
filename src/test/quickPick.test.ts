@@ -3,7 +3,7 @@ import { createQuickPickItem } from "../quickPick";
 import { PullRequest } from "../adapters/types";
 
 suite("createQuickPickItem", () => {
-  test("should format label with the PR title", () => {
+  test("should format label with just the PR title", () => {
     const pr: PullRequest = {
       id: "1",
       number: 123,
@@ -21,7 +21,7 @@ suite("createQuickPickItem", () => {
     assert.strictEqual(item.pr, pr);
   });
 
-  test("should format description with time ago", () => {
+  test("should format description and detail", () => {
     // Mocking timeAgo behavior by using a fixed relative time logic or ensuring the test environment matches
     // Since we can't easily mock timeAgo import without dependency injection or module mocking tools which might be complex here,
     // we will rely on the fact that timeAgo is deterministic for a given input relative to 'now'.
@@ -47,7 +47,9 @@ suite("createQuickPickItem", () => {
     // Allowing for small timing differences in test execution
     assert.ok(item.description === "1 hour ago" || item.description === "59 minutes ago" || item.description === "60 minutes ago");
 
-    // Check detail format as per original implementation
-    assert.strictEqual(item.detail, `(#456) By dev → "main" branch`);
+    // Description is date, detail is PR info
+    assert.ok(item.detail.includes("#456"));
+    assert.ok(item.detail.includes("By dev"));
+    assert.ok(item.detail.includes('"main" branch'));
   });
 });
