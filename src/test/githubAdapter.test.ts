@@ -288,4 +288,47 @@ suite("GitHubAdapter Unit Test Suite", () => {
       "Should NOT have called gh pr checkout",
     );
   });
+
+  test("getCurrentPullRequest should return PullRequest object when gh pr view succeeds", async () => {
+    executor.setResponse(
+      "gh",
+      [
+        "pr",
+        "view",
+        "--json",
+        "number,title,author,headRefName,baseRefName,updatedAt,url",
+      ],
+      JSON.stringify({
+        number: 123,
+        title: "Current PR",
+        author: { login: "user" },
+        headRefName: "feature",
+        baseRefName: "main",
+        updatedAt: new Date().toISOString(),
+        url: "http://github.com/user/repo/pull/123",
+      }),
+    );
+
+    const pr = await adapter.getCurrentPullRequest();
+    assert.ok(pr);
+    assert.strictEqual(pr?.number, 123);
+    assert.strictEqual(pr?.title, "Current PR");
+    assert.strictEqual(pr?.author, "user");
+  });
+
+  test("getCurrentPullRequest should return undefined when gh pr view fails", async () => {
+    executor.setFailure(
+      "gh",
+      [
+        "pr",
+        "view",
+        "--json",
+        "number,title,author,headRefName,baseRefName,updatedAt,url",
+      ],
+      "no pull requests found for this branch",
+    );
+
+    const pr = await adapter.getCurrentPullRequest();
+    assert.strictEqual(pr, undefined);
+  });
 });
