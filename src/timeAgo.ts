@@ -27,7 +27,9 @@ export function timeAgo(date: string | Date): string {
     return count + (count === 1 ? " minute ago" : " minutes ago");
   }
 
-  if (seconds < 10) return "just now";
+  if (seconds < 10) {
+    return "just now";
+  }
 
   return Math.floor(seconds) + " seconds ago";
 }
