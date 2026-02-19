@@ -22,6 +22,10 @@
         "command": "pullgod.openInBrowser",
         "title": "Open PR in Browser",
         "icon": "$(github)"
+      },
+      {
+        "command": "pullgod.copyPRSummary",
+        "title": "Pullgod: Copy PR Summary to Clipboard"
       }
     ],
     "menus": {

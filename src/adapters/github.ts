@@ -153,4 +153,25 @@ export class GitHubAdapter implements PullRequestProvider {
       await this.exec("gh", ["pr", "view", "--web"]);
     }
   }
+
+  async getCurrentPullRequest(): Promise<PullRequest | undefined> {
+    try {
+      await this.checkGhInstalled();
+      await this.checkIsGitHubRepo();
+      const output = await this.exec("gh", [
+        "pr",
+        "view",
+        "--json",
+        "number,title,author,headRefName,baseRefName,updatedAt,url",
+      ]);
+      const pr = JSON.parse(output);
+      return {
+        ...pr,
+        author: pr.author.login,
+        id: pr.number.toString(),
+      };
+    } catch (error) {
+      return undefined;
+    }
+  }
 }
