@@ -17,12 +17,9 @@ suite("Markdown Generation Test Suite", () => {
 
     const expected = [
       "# #123 Test PR",
-      "**testuser** wants to merge into `main` from `feature-branch`",
-      "State: **OPEN** | [View on GitHub](https://github.com/owner/repo/pull/123)",
       "",
       "This is a test PR body.",
       "",
-      "## Diff",
       "```diff",
       "diff content here",
       "```",
