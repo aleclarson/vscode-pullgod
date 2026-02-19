@@ -3,7 +3,7 @@ import { createQuickPickItem } from "../quickPick";
 import { PullRequest } from "../adapters/types";
 
 suite("createQuickPickItem", () => {
-  test("should format label with just the PR number", () => {
+  test("should format label with PR title", () => {
     const pr: PullRequest = {
       id: "1",
       number: 123,
@@ -17,11 +17,11 @@ suite("createQuickPickItem", () => {
 
     const item = createQuickPickItem(pr);
 
-    assert.strictEqual(item.label, "#123");
+    assert.strictEqual(item.label, "Test PR");
     assert.strictEqual(item.pr, pr);
   });
 
-  test("should format description with title and author", () => {
+  test("should format detail with number and author", () => {
     const pr: PullRequest = {
       id: "2",
       number: 456,
@@ -35,9 +35,9 @@ suite("createQuickPickItem", () => {
 
     const item = createQuickPickItem(pr);
 
-    // Using partial match because toLocaleString format varies by locale
-    assert.ok(item.description.includes("Another PR"));
-    assert.ok(item.description.includes("by dev"));
-    assert.strictEqual(item.detail, "bugfix -> main");
+    // Detail format: (#456) By dev → "main" branch
+    assert.ok(item.detail.includes("(#456)"));
+    assert.ok(item.detail.includes("By dev"));
+    assert.ok(item.detail.includes('"main" branch'));
   });
 });

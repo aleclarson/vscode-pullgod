@@ -7,6 +7,9 @@ import { createQuickPickItem } from "./quickPick";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
+  const outputChannel = vscode.window.createOutputChannel("Pullgod");
+  context.subscriptions.push(outputChannel);
+
   const cache = new PRCache(context.globalStorageUri.fsPath);
   const provider = AdapterFactory.getProvider();
 
@@ -103,6 +106,24 @@ export function activate(context: vscode.ExtensionContext) {
             vscode.window.showInformationMessage(
               `Checked out PR #${selected.pr.number}`,
             );
+
+            try {
+              await vscode.commands.executeCommand("pr.openDescription");
+            } catch (error) {
+              outputChannel.appendLine(
+                `Failed to open pull request description: ${error}`,
+              );
+            }
+
+            try {
+              await vscode.commands.executeCommand(
+                "github:activePullRequest.focus",
+              );
+            } catch (error) {
+              outputChannel.appendLine(
+                `Failed to focus GitHub active pull request view: ${error}`,
+              );
+            }
 
             try {
               const uri = vscode.Uri.from({
