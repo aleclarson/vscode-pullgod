@@ -3,7 +3,7 @@ import { createQuickPickItem } from "../quickPick";
 import { PullRequest } from "../adapters/types";
 
 suite("createQuickPickItem", () => {
-  test("should format label with PR title", () => {
+  test("should format label with PR number", () => {
     const pr: PullRequest = {
       id: "1",
       number: 123,
@@ -17,11 +17,12 @@ suite("createQuickPickItem", () => {
 
     const item = createQuickPickItem(pr);
 
-    assert.strictEqual(item.label, "Test PR");
+    assert.strictEqual(item.label, "#123");
     assert.strictEqual(item.pr, pr);
   });
 
-  test("should format detail with number and author", () => {
+  test("should format description with title, author and time ago", () => {
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
     const pr: PullRequest = {
       id: "2",
       number: 456,
@@ -29,15 +30,16 @@ suite("createQuickPickItem", () => {
       author: "dev",
       headRefName: "bugfix",
       baseRefName: "main",
-      updatedAt: "2023-01-02T12:00:00Z",
+      updatedAt: oneHourAgo,
       url: "http://github.com/owner/repo/pull/456",
     };
 
     const item = createQuickPickItem(pr);
 
-    // Detail format: (#456) By dev → "main" branch
-    assert.ok(item.detail.includes("(#456)"));
-    assert.ok(item.detail.includes("By dev"));
-    assert.ok(item.detail.includes('"main" branch'));
+    // Using partial match because toLocaleString format varies by locale
+    assert.ok(item.description.includes("Another PR"));
+    assert.ok(item.description.includes("by dev"));
+    assert.ok(item.description.includes("1 hour ago"));
+    assert.strictEqual(item.detail, "bugfix -> main");
   });
 });
