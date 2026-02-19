@@ -68,4 +68,42 @@ suite("createQuickPickItem", () => {
     assert.ok(item.detail.includes("By dev"));
     assert.ok(item.detail.includes("main"));
   });
+
+  test("should show failure icon if conflicting even if CI passed", () => {
+    const pr: PullRequest = {
+      id: "3",
+      number: 789,
+      title: "Conflicting PR",
+      author: "user",
+      headRefName: "conflict",
+      baseRefName: "main",
+      updatedAt: "2023-01-03T12:00:00Z",
+      url: "http://github.com/owner/repo/pull/789",
+      status: "SUCCESS",
+      mergeable: "CONFLICTING",
+    };
+
+    const item = createQuickPickItem(pr);
+
+    assert.strictEqual(item.label, "$(x) Conflicting PR");
+  });
+
+  test("should show check icon if mergeable and CI passed", () => {
+    const pr: PullRequest = {
+      id: "4",
+      number: 101,
+      title: "Clean PR",
+      author: "user",
+      headRefName: "clean",
+      baseRefName: "main",
+      updatedAt: "2023-01-04T12:00:00Z",
+      url: "http://github.com/owner/repo/pull/101",
+      status: "SUCCESS",
+      mergeable: "MERGEABLE",
+    };
+
+    const item = createQuickPickItem(pr);
+
+    assert.strictEqual(item.label, "$(check) Clean PR");
+  });
 });

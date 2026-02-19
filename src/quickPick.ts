@@ -10,16 +10,20 @@ export interface QuickPickItemProps {
 
 export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
   let icon = "";
-  switch (pr.status) {
-    case "SUCCESS":
-      icon = "$(check) ";
-      break;
-    case "FAILURE":
-      icon = "$(x) ";
-      break;
-    case "PENDING":
-      icon = "$(circle-filled) ";
-      break;
+  if (pr.mergeable === "CONFLICTING") {
+    icon = "$(x) ";
+  } else {
+    switch (pr.status) {
+      case "SUCCESS":
+        icon = "$(check) ";
+        break;
+      case "FAILURE":
+        icon = "$(x) ";
+        break;
+      case "PENDING":
+        icon = "$(circle-filled) ";
+        break;
+    }
   }
 
   return {

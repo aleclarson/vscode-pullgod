@@ -8,6 +8,7 @@ export interface PullRequest {
   updatedAt: string;
   url: string;
   status?: string;
+  mergeable?: string;
 }
 
 export interface PullRequestProvider {
