@@ -48,7 +48,10 @@ export function activate(context: vscode.ExtensionContext) {
     async () => {
       console.log("Pullgod command triggered");
       const quickPick = vscode.window.createQuickPick<
-        vscode.QuickPickItem & { pr: PullRequest }
+        vscode.QuickPickItem & {
+          pr: PullRequest;
+          isCurrentPrOption?: boolean;
+        }
       >();
       let isDisposed = false;
       quickPick.placeholder = "Search Pull Requests...";
@@ -57,10 +60,13 @@ export function activate(context: vscode.ExtensionContext) {
 
       const fetchPRs = async () => {
         try {
-          const prs = await provider.listPullRequests();
+          const [prs, currentPr] = await Promise.all([
+            provider.listPullRequests(),
+            provider.getCurrentPullRequest(),
+          ]);
           cache.set("github", prs);
           if (!isDisposed) {
-            updateQuickPickItems(prs);
+            updateQuickPickItems(prs, currentPr);
           }
         } catch (error) {
           if (!isDisposed) {
@@ -75,8 +81,26 @@ export function activate(context: vscode.ExtensionContext) {
         }
       };
 
-      const updateQuickPickItems = (prs: PullRequest[]) => {
-        quickPick.items = prs.map(createQuickPickItem);
+      const updateQuickPickItems = (
+        prs: PullRequest[],
+        currentPr?: PullRequest,
+      ) => {
+        const items: (vscode.QuickPickItem & {
+          pr: PullRequest;
+          isCurrentPrOption?: boolean;
+        })[] = prs.map(createQuickPickItem);
+
+        if (currentPr) {
+          items.unshift({
+            label: "$(git-pull-request) Open changes for current PR",
+            description: `PR #${currentPr.number}: ${currentPr.title}`,
+            detail: "Opens the changes view for the currently checked out pull request",
+            pr: currentPr,
+            isCurrentPrOption: true,
+          });
+        }
+
+        quickPick.items = items;
       };
 
       // SWR implementation: Use cached data first
@@ -92,6 +116,32 @@ export function activate(context: vscode.ExtensionContext) {
         const selected = quickPick.selectedItems[0];
         if (selected) {
           quickPick.hide();
+
+          if (selected.isCurrentPrOption) {
+            try {
+              const match = selected.pr.url.match(
+                /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
+              );
+              if (match) {
+                const [, owner, repo] = match;
+                await vscode.commands.executeCommand("pr.openChanges", {
+                  owner,
+                  repo,
+                  number: selected.pr.number,
+                });
+              } else {
+                vscode.window.showErrorMessage(
+                  "Could not parse repository info from PR URL",
+                );
+              }
+            } catch (error) {
+              vscode.window.showErrorMessage(
+                `Error opening changes for current PR: ${error}`,
+              );
+            }
+            return;
+          }
+
           try {
             await vscode.window.withProgress(
               {
