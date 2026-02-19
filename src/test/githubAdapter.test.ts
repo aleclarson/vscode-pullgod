@@ -5,14 +5,26 @@ import { PullRequest } from "../adapters/types";
 
 class MockExecutor implements Executor {
   private responses: Record<string, string> = {};
+  private failures: Record<string, string> = {};
+  public calls: string[] = [];
 
   setResponse(command: string, args: string[], output: string) {
     const key = `${command} ${args.join(" ")}`;
     this.responses[key] = output;
   }
 
+  setFailure(command: string, args: string[], error: string) {
+    const key = `${command} ${args.join(" ")}`;
+    this.failures[key] = error;
+  }
+
   async exec(command: string, args: string[], cwd: string): Promise<string> {
     const key = `${command} ${args.join(" ")}`;
+    this.calls.push(key);
+
+    if (this.failures[key] !== undefined) {
+      throw new Error(this.failures[key]);
+    }
     if (this.responses[key] !== undefined) {
       return this.responses[key];
     }
@@ -20,10 +32,14 @@ class MockExecutor implements Executor {
     if (command === "gh" && args[0] === "--version") {
       return "gh version 2.0.0";
     }
-    if (command === "git" && args[0] === "rev-parse") {
+    if (
+      command === "git" &&
+      args[0] === "rev-parse" &&
+      args[1] === "--is-inside-work-tree"
+    ) {
       return "true";
     }
-    if (command === "git" && args[0] === "remote") {
+    if (command === "git" && args[0] === "remote" && args[1] === "-v") {
       return "origin\thttps://github.com/user/repo.git (fetch)\norigin\thttps://github.com/user/repo.git (push)";
     }
     throw new Error(`Unexpected command: ${key}`);
@@ -116,5 +132,160 @@ suite("GitHubAdapter Unit Test Suite", () => {
 
     await adapter.openPullRequestOnWeb();
     // Success if no exception
+  });
+
+  test("checkoutPullRequest should not pull if local branch has unpushed commits", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature-branch",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    // 1. Check if local branch exists
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--verify", "feature-branch"],
+      "hash",
+    );
+
+    // 2. Check upstream
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "feature-branch@{u}"],
+      "origin/feature-branch",
+    );
+
+    // 3. Check unpushed commits (returns output)
+    executor.setResponse(
+      "git",
+      ["log", "feature-branch@{u}..feature-branch", "--oneline"],
+      "deadbeef commit message",
+    );
+
+    // 4. Expect git checkout instead of gh pr checkout
+    executor.setResponse("git", ["checkout", "feature-branch"], "");
+
+    await adapter.checkoutPullRequest(pr);
+
+    assert.ok(
+      executor.calls.includes("git checkout feature-branch"),
+      "Should have called git checkout",
+    );
+    assert.ok(
+      !executor.calls.includes("gh pr checkout 123"),
+      "Should NOT have called gh pr checkout",
+    );
+  });
+
+  test("checkoutPullRequest should pull if local branch is clean", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature-branch",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--verify", "feature-branch"],
+      "hash",
+    );
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "feature-branch@{u}"],
+      "origin/feature-branch",
+    );
+    // Empty output means clean
+    executor.setResponse(
+      "git",
+      ["log", "feature-branch@{u}..feature-branch", "--oneline"],
+      "",
+    );
+
+    executor.setResponse("gh", ["pr", "checkout", "123"], "");
+
+    await adapter.checkoutPullRequest(pr);
+
+    assert.ok(
+      executor.calls.includes("gh pr checkout 123"),
+      "Should have called gh pr checkout",
+    );
+  });
+
+  test("checkoutPullRequest should pull if local branch does not exist", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature-branch",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    // Branch check fails
+    executor.setFailure(
+      "git",
+      ["rev-parse", "--verify", "feature-branch"],
+      "fatal: Needed a single revision",
+    );
+
+    executor.setResponse("gh", ["pr", "checkout", "123"], "");
+
+    await adapter.checkoutPullRequest(pr);
+
+    assert.ok(
+      executor.calls.includes("gh pr checkout 123"),
+      "Should have called gh pr checkout",
+    );
+  });
+
+  test("checkoutPullRequest should not pull if local branch has no upstream (unpushed)", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature-branch",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--verify", "feature-branch"],
+      "hash",
+    );
+
+    // Upstream check fails
+    executor.setFailure(
+      "git",
+      ["rev-parse", "--abbrev-ref", "feature-branch@{u}"],
+      "fatal: no upstream configured for branch 'feature-branch'",
+    );
+
+    executor.setResponse("git", ["checkout", "feature-branch"], "");
+
+    await adapter.checkoutPullRequest(pr);
+
+    assert.ok(
+      executor.calls.includes("git checkout feature-branch"),
+      "Should have called git checkout",
+    );
+    assert.ok(
+      !executor.calls.includes("gh pr checkout 123"),
+      "Should NOT have called gh pr checkout",
+    );
   });
 });

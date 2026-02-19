@@ -76,9 +76,53 @@ export class GitHubAdapter implements PullRequestProvider {
       });
   }
 
+  async localBranchExists(branchName: string): Promise<boolean> {
+    try {
+      await this.exec("git", ["rev-parse", "--verify", branchName]);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  async hasUnpushedCommits(branchName: string): Promise<boolean> {
+    try {
+      // Check if upstream exists
+      await this.exec("git", [
+        "rev-parse",
+        "--abbrev-ref",
+        `${branchName}@{u}`,
+      ]);
+    } catch (error) {
+      // If no upstream, it's a local branch, effectively unpushed.
+      return true;
+    }
+
+    try {
+      const output = await this.exec("git", [
+        "log",
+        `${branchName}@{u}..${branchName}`,
+        "--oneline",
+      ]);
+      return output.trim().length > 0;
+    } catch (error) {
+      // If git log fails for some reason, default to safe behavior (true -> don't pull)
+      return true;
+    }
+  }
+
   async checkoutPullRequest(pr: PullRequest): Promise<void> {
     await this.checkGhInstalled();
     await this.checkIsGitHubRepo();
+
+    const branchName = pr.headRefName;
+    if (await this.localBranchExists(branchName)) {
+      if (await this.hasUnpushedCommits(branchName)) {
+        await this.exec("git", ["checkout", branchName]);
+        return;
+      }
+    }
+
     await this.exec("gh", ["pr", "checkout", pr.number.toString()]);
   }
 
