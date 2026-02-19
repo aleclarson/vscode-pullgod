@@ -9,8 +9,21 @@ export interface QuickPickItemProps {
 }
 
 export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
+  let icon = "";
+  switch (pr.status) {
+    case "SUCCESS":
+      icon = "$(check) ";
+      break;
+    case "FAILURE":
+      icon = "$(x) ";
+      break;
+    case "PENDING":
+      icon = "$(circle-filled) ";
+      break;
+  }
+
   return {
-    label: pr.title,
+    label: `${icon}${pr.title}`,
     description: timeAgo(pr.updatedAt),
     detail: `(#${pr.number}) By ${pr.author} → "${pr.baseRefName}" branch`,
     pr: pr,

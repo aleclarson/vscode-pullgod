@@ -7,6 +7,7 @@ export interface PullRequest {
   baseRefName: string;
   updatedAt: string;
   url: string;
+  status?: string;
 }
 
 export interface PullRequestProvider {
