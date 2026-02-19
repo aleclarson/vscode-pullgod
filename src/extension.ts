@@ -92,9 +92,9 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (currentPr) {
           items.unshift({
-            label: "$(git-pull-request) Open changes for current PR",
-            description: `PR #${currentPr.number}: ${currentPr.title}`,
-            detail: "Opens the changes view for the currently checked out pull request",
+            label: "$(git-pull-request) Open changes",
+            description: `(#${currentPr.number}) ${currentPr.title}`,
+            detail: "View the git diff for the current PR",
             pr: currentPr,
             isCurrentPrOption: true,
           });
