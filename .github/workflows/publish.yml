@@ -12,11 +12,17 @@ jobs:
     - uses: actions/checkout@v4
     - uses: pnpm/action-setup@v4
       with:
-        version: 10
+        version: 9
     - uses: actions/setup-node@v4
       with:
         node-version: 20
         cache: 'pnpm'
     - run: pnpm install
     - run: pnpm run compile
-    - run: pnpm run publish:ovsx -- -p ${{ secrets.OVSX_PAT }}
+    - run: npm install -g ovsx @vscode/vsce
+    - run: vsce publish
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
+    - run: ovsx publish
+      env:
+        OVSX_PAT: ${{ secrets.OVSX_PAT }}
