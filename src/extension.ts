@@ -3,6 +3,7 @@ import { AdapterFactory } from "./adapters/factory";
 import { PRCache } from "./cache";
 import { PullRequest } from "./adapters/types";
 import { DiffContentProvider } from "./providers/diffContentProvider";
+import { createQuickPickItem } from "./quickPick";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
@@ -72,12 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
       };
 
       const updateQuickPickItems = (prs: PullRequest[]) => {
-        quickPick.items = prs.map((pr) => ({
-          label: `#${pr.number} ${pr.title}`,
-          description: `by ${pr.author} (updated: ${new Date(pr.updatedAt).toLocaleString()})`,
-          detail: `${pr.headRefName} -> ${pr.baseRefName}`,
-          pr: pr,
-        }));
+        quickPick.items = prs.map(createQuickPickItem);
       };
 
       // SWR implementation: Use cached data first
