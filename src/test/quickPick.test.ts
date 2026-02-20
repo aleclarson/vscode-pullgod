@@ -69,7 +69,7 @@ suite("createQuickPickItem", () => {
     assert.ok(item.detail.includes("main"));
   });
 
-  test("should show failure icon if conflicting even if CI passed", () => {
+  test("should show warning icon if conflicting even if CI passed", () => {
     const pr: PullRequest = {
       id: "3",
       number: 789,
@@ -85,7 +85,7 @@ suite("createQuickPickItem", () => {
 
     const item = createQuickPickItem(pr);
 
-    assert.strictEqual(item.label, "$(x) Conflicting PR");
+    assert.strictEqual(item.label, "$(warning) Conflicting PR");
   });
 
   test("should show check icon if mergeable and CI passed", () => {
@@ -106,4 +106,5 @@ suite("createQuickPickItem", () => {
 
     assert.strictEqual(item.label, "$(check) Clean PR");
   });
+
 });
