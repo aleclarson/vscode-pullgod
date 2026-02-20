@@ -20,7 +20,7 @@
       },
       {
         "command": "pullgod.openInBrowser",
-        "title": "Open PR in Browser",
+        "title": "Pullgod: Open PR in Browser",
         "icon": "$(github)"
       },
       {
