@@ -4,6 +4,26 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.5.0] - 2026-02-20
+
+### Added
+- CI status icons in the Quick Pick list.
+- `Pullgod: Copy PR Summary to Clipboard` command (replaces auto-opening PR markdown).
+
+### Changed
+- Always show "Open changes" in Quick Pick with an optimized branch check.
+
+## [1.4.0] - 2026-02-19
+
+### Added
+- "Open changes for current PR" option in the Quick Pick list.
+- Per-workspace pull request caching for improved performance and isolation.
+- OpenVSX publishing support.
+
+### Changed
+- Improved Quick Pick display with relative time (e.g., "2 hours ago") instead of absolute timestamps.
+- Automatically focus the GitHub extension's active pull request view after checkout.
+
 ## [1.3.0] - 2026-02-19
 
 ### Changed

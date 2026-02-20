@@ -55,4 +55,4 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
 1. Open the project in VS Code.
 2. Press `F5` to open a new "Extension Development Host" window.
 3. In the new window, open a git repository with a GitHub remote.
-4. Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and search for `Pullgod > View Pull Requests`.
+4. Open the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`) and search for `Pullgod: View Pull Requests`.
