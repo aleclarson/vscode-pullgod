@@ -106,4 +106,44 @@ suite("createQuickPickItem", () => {
 
     assert.strictEqual(item.label, "$(check) Clean PR");
   });
+
+  test("should show warning icon if mergeStateStatus is BEHIND", () => {
+    const pr: PullRequest = {
+      id: "5",
+      number: 102,
+      title: "Behind PR",
+      author: "user",
+      headRefName: "behind",
+      baseRefName: "main",
+      updatedAt: "2023-01-05T12:00:00Z",
+      url: "http://github.com/owner/repo/pull/102",
+      status: "SUCCESS",
+      mergeable: "MERGEABLE",
+      mergeStateStatus: "BEHIND",
+    };
+
+    const item = createQuickPickItem(pr);
+
+    assert.strictEqual(item.label, "$(warning) Behind PR");
+  });
+
+  test("should prioritize CONFLICTING over BEHIND", () => {
+    const pr: PullRequest = {
+      id: "6",
+      number: 103,
+      title: "Conflicting and Behind PR",
+      author: "user",
+      headRefName: "conflict-behind",
+      baseRefName: "main",
+      updatedAt: "2023-01-06T12:00:00Z",
+      url: "http://github.com/owner/repo/pull/103",
+      status: "SUCCESS",
+      mergeable: "CONFLICTING",
+      mergeStateStatus: "BEHIND",
+    };
+
+    const item = createQuickPickItem(pr);
+
+    assert.strictEqual(item.label, "$(x) Conflicting and Behind PR");
+  });
 });

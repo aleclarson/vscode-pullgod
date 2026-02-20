@@ -9,6 +9,7 @@ export interface PullRequest {
   url: string;
   status?: string;
   mergeable?: string;
+  mergeStateStatus?: string;
 }
 
 export interface PullRequestProvider {

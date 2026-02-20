@@ -130,7 +130,7 @@ export class GitHubAdapter implements PullRequestProvider {
       "pr",
       "list",
       "--json",
-      "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable",
+      "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable,mergeStateStatus",
       "--limit",
       "100",
     ]);
@@ -142,6 +142,7 @@ export class GitHubAdapter implements PullRequestProvider {
         id: pr.number.toString(),
         status: this.parseStatus(pr.statusCheckRollup),
         mergeable: pr.mergeable,
+        mergeStateStatus: pr.mergeStateStatus,
       }))
       .sort((a: PullRequest, b: PullRequest) => {
         return (

@@ -12,6 +12,8 @@ export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
   let icon = "";
   if (pr.mergeable === "CONFLICTING") {
     icon = "$(x) ";
+  } else if (pr.mergeStateStatus === "BEHIND") {
+    icon = "$(warning) ";
   } else {
     switch (pr.status) {
       case "SUCCESS":
