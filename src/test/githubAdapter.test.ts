@@ -331,4 +331,92 @@ suite("GitHubAdapter Unit Test Suite", () => {
     const pr = await adapter.getCurrentPullRequest();
     assert.strictEqual(pr, undefined);
   });
+
+  test("listPullRequests should parse statusCheckRollup correctly", async () => {
+    const mockOutput = [
+      {
+        number: 1,
+        title: "PR 1",
+        author: { login: "user1" },
+        headRefName: "feature1",
+        baseRefName: "main",
+        updatedAt: new Date().toISOString(),
+        url: "url1",
+        statusCheckRollup: [{ state: "SUCCESS" }, { state: "SUCCESS" }], // Array success
+        mergeable: "MERGEABLE",
+      },
+      {
+        number: 2,
+        title: "PR 2",
+        author: { login: "user2" },
+        headRefName: "feature2",
+        baseRefName: "main",
+        updatedAt: new Date().toISOString(),
+        url: "url2",
+        statusCheckRollup: [{ state: "SUCCESS" }, { state: "FAILURE" }], // Array failure
+        mergeable: "MERGEABLE",
+      },
+      {
+        number: 3,
+        title: "PR 3",
+        author: { login: "user3" },
+        headRefName: "feature3",
+        baseRefName: "main",
+        updatedAt: new Date().toISOString(),
+        url: "url3",
+        statusCheckRollup: { state: "PENDING" }, // Object pending
+        mergeable: "MERGEABLE",
+      },
+      {
+        number: 4,
+        title: "PR 4",
+        author: { login: "user4" },
+        headRefName: "feature4",
+        baseRefName: "main",
+        updatedAt: new Date().toISOString(),
+        url: "url4",
+        statusCheckRollup: [], // Empty array
+        mergeable: "CONFLICTING",
+      },
+      {
+        number: 5,
+        title: "PR 5",
+        author: { login: "user5" },
+        headRefName: "feature5",
+        baseRefName: "main",
+        updatedAt: new Date().toISOString(),
+        url: "url5",
+        statusCheckRollup: null, // Null
+        mergeable: "UNKNOWN",
+      },
+    ];
+
+    executor.setResponse(
+      "gh",
+      [
+        "pr",
+        "list",
+        "--json",
+        "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable",
+        "--limit",
+        "100",
+      ],
+      JSON.stringify(mockOutput),
+    );
+
+    const prs = await adapter.listPullRequests();
+
+    assert.strictEqual(prs.length, 5);
+    // PR 1: SUCCESS (all checks passed)
+    assert.strictEqual(prs.find((p) => p.number === 1)?.status, "SUCCESS");
+    // PR 2: FAILURE (one check failed)
+    assert.strictEqual(prs.find((p) => p.number === 2)?.status, "FAILURE");
+    // PR 3: PENDING (rollup state is pending)
+    assert.strictEqual(prs.find((p) => p.number === 3)?.status, "PENDING");
+    // PR 4: UNKNOWN (empty checks), but CONFLICTING
+    assert.strictEqual(prs.find((p) => p.number === 4)?.status, "UNKNOWN");
+    assert.strictEqual(prs.find((p) => p.number === 4)?.mergeable, "CONFLICTING");
+    // PR 5: UNKNOWN (no checks)
+    assert.strictEqual(prs.find((p) => p.number === 5)?.status, "UNKNOWN");
+  });
 });

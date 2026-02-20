@@ -51,6 +51,78 @@ export class GitHubAdapter implements PullRequestProvider {
     }
   }
 
+  private parseStatus(statusCheckRollup: any): string {
+    if (!statusCheckRollup) {
+      return "UNKNOWN";
+    }
+
+    if (Array.isArray(statusCheckRollup)) {
+      if (statusCheckRollup.length === 0) {
+        return "UNKNOWN";
+      }
+      let hasFailure = false;
+      let hasPending = false;
+
+      for (const check of statusCheckRollup) {
+        const state = check.state || check.conclusion || check.status;
+        if (!state) {
+          continue;
+        }
+
+        const s = state.toUpperCase();
+        if (
+          [
+            "FAILURE",
+            "ERROR",
+            "CANCELLED",
+            "TIMED_OUT",
+            "ACTION_REQUIRED",
+          ].includes(s)
+        ) {
+          hasFailure = true;
+          break;
+        }
+        if (["PENDING", "IN_PROGRESS", "QUEUED", "WAITING"].includes(s)) {
+          hasPending = true;
+        }
+      }
+
+      if (hasFailure) {
+        return "FAILURE";
+      }
+      if (hasPending) {
+        return "PENDING";
+      }
+      return "SUCCESS";
+    } else if (typeof statusCheckRollup === "object") {
+      const state = statusCheckRollup.state || statusCheckRollup.status;
+      if (!state) {
+        return "UNKNOWN";
+      }
+
+      const s = state.toUpperCase();
+      if (
+        [
+          "FAILURE",
+          "ERROR",
+          "CANCELLED",
+          "TIMED_OUT",
+          "ACTION_REQUIRED",
+        ].includes(s)
+      ) {
+        return "FAILURE";
+      }
+      if (["PENDING", "IN_PROGRESS", "QUEUED", "WAITING"].includes(s)) {
+        return "PENDING";
+      }
+      if (["SUCCESS", "NEUTRAL", "SKIPPED", "COMPLETED"].includes(s)) {
+        return "SUCCESS";
+      }
+    }
+
+    return "UNKNOWN";
+  }
+
   async listPullRequests(): Promise<PullRequest[]> {
     await this.checkGhInstalled();
     await this.checkIsGitHubRepo();
@@ -58,7 +130,7 @@ export class GitHubAdapter implements PullRequestProvider {
       "pr",
       "list",
       "--json",
-      "number,title,author,headRefName,baseRefName,updatedAt,url",
+      "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable",
       "--limit",
       "100",
     ]);
@@ -68,6 +140,8 @@ export class GitHubAdapter implements PullRequestProvider {
         ...pr,
         author: pr.author.login,
         id: pr.number.toString(),
+        status: this.parseStatus(pr.statusCheckRollup),
+        mergeable: pr.mergeable,
       }))
       .sort((a: PullRequest, b: PullRequest) => {
         return (
