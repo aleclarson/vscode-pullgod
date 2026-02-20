@@ -248,4 +248,12 @@ export class GitHubAdapter implements PullRequestProvider {
       return undefined;
     }
   }
+
+  async getCurrentBranch(): Promise<string> {
+    try {
+      return await this.exec("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
+    } catch (error) {
+      return "";
+    }
+  }
 }

@@ -89,7 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
       console.log("Pullgod command triggered");
       const quickPick = vscode.window.createQuickPick<
         vscode.QuickPickItem & {
-          pr: PullRequest;
+          pr?: PullRequest;
           isCurrentPrOption?: boolean;
         }
       >();
@@ -98,15 +98,18 @@ export function activate(context: vscode.ExtensionContext) {
       quickPick.busy = true;
       quickPick.show();
 
+      const branchPromise = provider.getCurrentBranch();
+
       const fetchPRs = async () => {
         try {
-          const [prs, currentPr] = await Promise.all([
+          const [prs, currentPr, branch] = await Promise.all([
             provider.listPullRequests(),
             provider.getCurrentPullRequest(),
+            branchPromise,
           ]);
           cache.set("github", prs);
           if (!isDisposed) {
-            updateQuickPickItems(prs, currentPr);
+            updateQuickPickItems(prs, currentPr, branch);
           }
         } catch (error) {
           if (!isDisposed) {
@@ -124,18 +127,31 @@ export function activate(context: vscode.ExtensionContext) {
       const updateQuickPickItems = (
         prs: PullRequest[],
         currentPr?: PullRequest,
+        currentBranch?: string,
       ) => {
         const items: (vscode.QuickPickItem & {
-          pr: PullRequest;
+          pr?: PullRequest;
           isCurrentPrOption?: boolean;
         })[] = prs.map(createQuickPickItem);
 
-        if (currentPr) {
+        let activePR = currentPr;
+        if (!activePR && currentBranch) {
+          activePR = prs.find((p) => p.headRefName === currentBranch);
+        }
+
+        if (activePR) {
           items.unshift({
             label: "$(git-pull-request) Open changes",
-            description: `(#${currentPr.number}) ${currentPr.title}`,
+            description: `(#${activePR.number}) ${activePR.title}`,
             detail: "View the git diff for the current PR",
-            pr: currentPr,
+            pr: activePR,
+            isCurrentPrOption: true,
+          });
+        } else {
+          items.unshift({
+            label: "$(git-pull-request) Open changes",
+            description: "Select a PR to view changes",
+            detail: "View the git diff for a selected PR",
             isCurrentPrOption: true,
           });
         }
@@ -146,7 +162,12 @@ export function activate(context: vscode.ExtensionContext) {
       // SWR implementation: Use cached data first
       const cachedPRs = cache.get("github");
       if (cachedPRs) {
-        updateQuickPickItems(cachedPRs);
+        // Optimistically use cached PRs, waiting for fast branch check
+        branchPromise.then((branch) => {
+          if (!isDisposed) {
+            updateQuickPickItems(cachedPRs, undefined, branch);
+          }
+        });
       }
 
       // Always revalidate
@@ -158,27 +179,58 @@ export function activate(context: vscode.ExtensionContext) {
           quickPick.hide();
 
           if (selected.isCurrentPrOption) {
-            try {
-              const match = selected.pr.url.match(
-                /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
-              );
-              if (match) {
-                const [, owner, repo] = match;
-                await vscode.commands.executeCommand("pr.openChanges", {
-                  owner,
-                  repo,
-                  number: selected.pr.number,
-                });
-              } else {
+            const openChangesForPr = async (pr: PullRequest) => {
+              try {
+                const match = pr.url.match(
+                  /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
+                );
+                if (match) {
+                  const [, owner, repo] = match;
+                  await vscode.commands.executeCommand("pr.openChanges", {
+                    owner,
+                    repo,
+                    number: pr.number,
+                  });
+                } else {
+                  vscode.window.showErrorMessage(
+                    "Could not parse repository info from PR URL",
+                  );
+                }
+              } catch (error) {
                 vscode.window.showErrorMessage(
-                  "Could not parse repository info from PR URL",
+                  `Error opening changes for current PR: ${error}`,
                 );
               }
-            } catch (error) {
-              vscode.window.showErrorMessage(
-                `Error opening changes for current PR: ${error}`,
+            };
+
+            if (selected.pr) {
+              await openChangesForPr(selected.pr);
+            } else {
+              // Show a new Quick Pick to select a PR
+              const prSelection = vscode.window.createQuickPick<
+                vscode.QuickPickItem & { pr: PullRequest }
+              >();
+              prSelection.items = quickPick.items.filter(
+                (i): i is vscode.QuickPickItem & { pr: PullRequest } =>
+                  !i.isCurrentPrOption && !!i.pr,
               );
+              prSelection.placeholder = "Select a PR to view changes";
+              prSelection.show();
+
+              prSelection.onDidAccept(async () => {
+                const prSelected = prSelection.selectedItems[0];
+                if (prSelected) {
+                  prSelection.hide();
+                  await openChangesForPr(prSelected.pr);
+                }
+              });
+
+              prSelection.onDidHide(() => prSelection.dispose());
             }
+            return;
+          }
+
+          if (!selected.pr) {
             return;
           }
 
@@ -190,7 +242,9 @@ export function activate(context: vscode.ExtensionContext) {
                 cancellable: false,
               },
               async () => {
-                await provider.checkoutPullRequest(selected.pr);
+                if (selected.pr) {
+                  await provider.checkoutPullRequest(selected.pr);
+                }
               },
             );
             vscode.window.showInformationMessage(
