@@ -4,6 +4,11 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.6.0] - 2026-02-20
+
+### Added
+- Selection-preserving updates for the pull request list, maintaining scroll position and active selection during background refreshes.
+
 ## [1.5.0] - 2026-02-20
 
 ### Added
