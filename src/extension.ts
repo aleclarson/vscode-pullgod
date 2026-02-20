@@ -100,6 +100,103 @@ export function activate(context: vscode.ExtensionContext) {
 
       const branchPromise = provider.getCurrentBranch();
 
+      const itemsMap = new Map<
+        string,
+        vscode.QuickPickItem & {
+          pr?: PullRequest;
+          isCurrentPrOption?: boolean;
+        }
+      >();
+
+      const updateQuickPickItems = (
+        prs: PullRequest[],
+        currentPr?: PullRequest,
+        currentBranch?: string,
+      ) => {
+        const previousActive = quickPick.activeItems[0];
+        const newItems: (vscode.QuickPickItem & {
+          pr?: PullRequest;
+          isCurrentPrOption?: boolean;
+        })[] = [];
+
+        let activePR = currentPr;
+        if (!activePR && currentBranch) {
+          activePR = prs.find((p) => p.headRefName === currentBranch);
+        }
+
+        const currentKey = "current-option";
+        let currentItem = itemsMap.get(currentKey);
+
+        if (activePR) {
+          if (!currentItem || !currentItem.isCurrentPrOption) {
+            currentItem = {
+              label: "$(git-pull-request) Open changes",
+              description: `(#${activePR.number}) ${activePR.title}`,
+              detail: "View the git diff for the current PR",
+              pr: activePR,
+              isCurrentPrOption: true,
+            };
+            itemsMap.set(currentKey, currentItem);
+          } else {
+            currentItem.description = `(#${activePR.number}) ${activePR.title}`;
+            currentItem.pr = activePR;
+          }
+        } else {
+          if (!currentItem || !currentItem.isCurrentPrOption) {
+            currentItem = {
+              label: "$(git-pull-request) Open changes",
+              description: "Select a PR to view changes",
+              detail: "View the git diff for a selected PR",
+              isCurrentPrOption: true,
+            };
+            itemsMap.set(currentKey, currentItem);
+          } else {
+            currentItem.description = "Select a PR to view changes";
+            currentItem.pr = undefined;
+          }
+        }
+        newItems.push(currentItem);
+
+        for (const pr of prs) {
+          const key = `pr-${pr.number}`;
+          const props = createQuickPickItem(pr);
+          let item = itemsMap.get(key);
+          if (item) {
+            item.label = props.label;
+            item.description = props.description;
+            item.detail = props.detail;
+            item.pr = pr;
+          } else {
+            item = { ...props, pr };
+            itemsMap.set(key, item);
+          }
+          newItems.push(item);
+        }
+
+        quickPick.items = newItems;
+
+        // Restore active item to maintain scroll position/selection
+        if (previousActive) {
+          const newActive = newItems.find((item) => {
+            if (item.isCurrentPrOption && previousActive.isCurrentPrOption) {
+              return true;
+            }
+            if (
+              !item.isCurrentPrOption &&
+              !previousActive.isCurrentPrOption &&
+              item.pr &&
+              previousActive.pr
+            ) {
+              return item.pr.number === previousActive.pr.number;
+            }
+            return false;
+          });
+          if (newActive) {
+            quickPick.activeItems = [newActive];
+          }
+        }
+      };
+
       const fetchPRs = async () => {
         try {
           const [prs, currentPr, branch] = await Promise.all([
@@ -108,6 +205,7 @@ export function activate(context: vscode.ExtensionContext) {
             branchPromise,
           ]);
           cache.set("github", prs);
+
           if (!isDisposed) {
             updateQuickPickItems(prs, currentPr, branch);
           }
@@ -123,42 +221,6 @@ export function activate(context: vscode.ExtensionContext) {
           }
         }
       };
-
-      const updateQuickPickItems = (
-        prs: PullRequest[],
-        currentPr?: PullRequest,
-        currentBranch?: string,
-      ) => {
-        const items: (vscode.QuickPickItem & {
-          pr?: PullRequest;
-          isCurrentPrOption?: boolean;
-        })[] = prs.map(createQuickPickItem);
-
-        let activePR = currentPr;
-        if (!activePR && currentBranch) {
-          activePR = prs.find((p) => p.headRefName === currentBranch);
-        }
-
-        if (activePR) {
-          items.unshift({
-            label: "$(git-pull-request) Open changes",
-            description: `(#${activePR.number}) ${activePR.title}`,
-            detail: "View the git diff for the current PR",
-            pr: activePR,
-            isCurrentPrOption: true,
-          });
-        } else {
-          items.unshift({
-            label: "$(git-pull-request) Open changes",
-            description: "Select a PR to view changes",
-            detail: "View the git diff for a selected PR",
-            isCurrentPrOption: true,
-          });
-        }
-
-        quickPick.items = items;
-      };
-
       // SWR implementation: Use cached data first
       const cachedPRs = cache.get("github");
       if (cachedPRs) {
