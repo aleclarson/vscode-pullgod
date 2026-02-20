@@ -4,6 +4,7 @@ import { PRCache } from "./cache";
 import { PullRequest } from "./adapters/types";
 import { DiffContentProvider } from "./providers/diffContentProvider";
 import { createQuickPickItem } from "./quickPick";
+import { generatePRMarkdown } from "./markdown";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
@@ -44,6 +45,42 @@ export function activate(context: vscode.ExtensionContext) {
         }
       },
     ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pullgod.copyPRSummary", async () => {
+      try {
+        const pr = await provider.getCurrentPullRequest();
+        if (!pr) {
+          vscode.window.showErrorMessage("No active pull request found.");
+          return;
+        }
+
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: `Fetching PR #${pr.number} summary...`,
+            cancellable: false,
+          },
+          async () => {
+            const [viewJson, diff] = await Promise.all([
+              provider.getPullRequestView(pr),
+              provider.getPullRequestDiff(pr),
+            ]);
+
+            const prData = JSON.parse(viewJson);
+            const markdown = generatePRMarkdown(prData, diff);
+
+            await vscode.env.clipboard.writeText(markdown);
+            vscode.window.showInformationMessage(
+              "PR summary copied to clipboard",
+            );
+          },
+        );
+      } catch (error) {
+        vscode.window.showErrorMessage(`Error copying PR summary: ${error}`);
+      }
+    }),
   );
 
   const disposable = vscode.commands.registerCommand(
@@ -175,19 +212,6 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (error) {
               outputChannel.appendLine(
                 `Failed to focus GitHub active pull request view: ${error}`,
-              );
-            }
-
-            try {
-              const uri = vscode.Uri.from({
-                scheme: "pullgod-pr",
-                path: `PR-${selected.pr.number}.md`,
-                query: `number=${selected.pr.number}`,
-              });
-              await vscode.commands.executeCommand("markdown.showPreview", uri);
-            } catch (error) {
-              vscode.window.showErrorMessage(
-                `Error opening pull request diff: ${error}`,
               );
             }
           } catch (error) {

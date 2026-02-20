@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { PullRequestProvider, PullRequest } from "../adapters/types";
+import { generatePRMarkdown } from "../markdown";
 
 export class DiffContentProvider implements vscode.TextDocumentContentProvider {
   constructor(private provider: PullRequestProvider) {}
@@ -21,20 +22,7 @@ export class DiffContentProvider implements vscode.TextDocumentContentProvider {
 
       const prData = JSON.parse(viewJson);
 
-      const markdown = [
-        `# #${prData.number} ${prData.title}`,
-        `**${prData.author.login}** wants to merge into \`${prData.baseRefName}\` from \`${prData.headRefName}\``,
-        `State: **${prData.state}** | [View on GitHub](${prData.url})`,
-        "",
-        prData.body,
-        "",
-        "## Diff",
-        "```diff",
-        diff,
-        "```",
-      ].join("\n");
-
-      return markdown;
+      return generatePRMarkdown(prData, diff);
     } catch (error) {
       return `Error fetching diff: ${error}`;
     }
