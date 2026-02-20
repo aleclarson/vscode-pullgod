@@ -344,7 +344,6 @@ suite("GitHubAdapter Unit Test Suite", () => {
         url: "url1",
         statusCheckRollup: [{ state: "SUCCESS" }, { state: "SUCCESS" }], // Array success
         mergeable: "MERGEABLE",
-        mergeStateStatus: "CLEAN",
       },
       {
         number: 2,
@@ -356,7 +355,6 @@ suite("GitHubAdapter Unit Test Suite", () => {
         url: "url2",
         statusCheckRollup: [{ state: "SUCCESS" }, { state: "FAILURE" }], // Array failure
         mergeable: "MERGEABLE",
-        mergeStateStatus: "CLEAN",
       },
       {
         number: 3,
@@ -368,7 +366,6 @@ suite("GitHubAdapter Unit Test Suite", () => {
         url: "url3",
         statusCheckRollup: { state: "PENDING" }, // Object pending
         mergeable: "MERGEABLE",
-        mergeStateStatus: "BEHIND",
       },
       {
         number: 4,
@@ -380,7 +377,6 @@ suite("GitHubAdapter Unit Test Suite", () => {
         url: "url4",
         statusCheckRollup: [], // Empty array
         mergeable: "CONFLICTING",
-        mergeStateStatus: "DIRTY",
       },
       {
         number: 5,
@@ -392,7 +388,6 @@ suite("GitHubAdapter Unit Test Suite", () => {
         url: "url5",
         statusCheckRollup: null, // Null
         mergeable: "UNKNOWN",
-        mergeStateStatus: "UNKNOWN",
       },
     ];
 
@@ -402,7 +397,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
         "pr",
         "list",
         "--json",
-        "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable,mergeStateStatus",
+        "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable",
         "--limit",
         "100",
       ],
@@ -418,7 +413,6 @@ suite("GitHubAdapter Unit Test Suite", () => {
     assert.strictEqual(prs.find((p) => p.number === 2)?.status, "FAILURE");
     // PR 3: PENDING (rollup state is pending)
     assert.strictEqual(prs.find((p) => p.number === 3)?.status, "PENDING");
-    assert.strictEqual(prs.find((p) => p.number === 3)?.mergeStateStatus, "BEHIND");
     // PR 4: UNKNOWN (empty checks), but CONFLICTING
     assert.strictEqual(prs.find((p) => p.number === 4)?.status, "UNKNOWN");
     assert.strictEqual(prs.find((p) => p.number === 4)?.mergeable, "CONFLICTING");
