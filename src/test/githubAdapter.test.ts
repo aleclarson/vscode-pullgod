@@ -438,4 +438,45 @@ suite("GitHubAdapter Unit Test Suite", () => {
 
     await adapter.listPullRequests();
   });
+
+  test("listPullRequests should move low priority PRs to the end", async () => {
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [
+            {
+              number: 1,
+              title: "PR 1 (Low Priority)",
+              author: { login: "user1" },
+              headRefName: "feature1",
+              baseRefName: "main",
+              updatedAt: new Date(Date.now() + 10000).toISOString(), // Newer but low priority
+              url: "url1",
+              statusCheckRollup: null,
+              mergeable: "MERGEABLE",
+              labels: { nodes: [{ name: "priority:low" }, { name: "bug" }] },
+            },
+            {
+              number: 2,
+              title: "PR 2 (Normal)",
+              author: { login: "user2" },
+              headRefName: "feature2",
+              baseRefName: "main",
+              updatedAt: new Date(Date.now()).toISOString(), // Older
+              url: "url2",
+              statusCheckRollup: null,
+              mergeable: "MERGEABLE",
+              labels: { nodes: [{ name: "enhancement" }] },
+            },
+          ],
+        },
+      },
+    };
+
+    const prs = await adapter.listPullRequests();
+
+    assert.strictEqual(prs.length, 2);
+    assert.strictEqual(prs[0].number, 2, "Normal PR should be first");
+    assert.strictEqual(prs[1].number, 1, "Low priority PR should be last");
+  });
 });

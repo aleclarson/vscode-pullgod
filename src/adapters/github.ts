@@ -3,6 +3,41 @@ import { Executor, NodeExecutor, Workspace, VSCodeWorkspace } from "./system";
 import { Authenticator } from "./authenticator";
 import * as vscode from "vscode";
 
+interface GitHubPullRequestNode {
+  number: number;
+  title: string;
+  author: {
+    login: string;
+  };
+  headRefName: string;
+  baseRefName: string;
+  updatedAt: string;
+  url: string;
+  mergeable: string;
+  statusCheckRollup?: {
+    state: string;
+  };
+  headRepository?: {
+    url: string;
+    owner: {
+      login: string;
+    };
+  };
+  labels?: {
+    nodes: {
+      name: string;
+    }[];
+  };
+}
+
+interface GitHubPullRequestsResponse {
+  repository: {
+    pullRequests: {
+      nodes: GitHubPullRequestNode[];
+    };
+  };
+}
+
 export class GitHubAdapter implements PullRequestProvider {
   private executor: Executor;
   private workspace: Workspace;
@@ -125,6 +160,11 @@ export class GitHubAdapter implements PullRequestProvider {
                   login
                 }
               }
+              labels(first: 10) {
+                nodes {
+                  name
+                }
+              }
             }
           }
         }
@@ -132,24 +172,43 @@ export class GitHubAdapter implements PullRequestProvider {
     `;
 
     try {
-      const result: any = await octokit.graphql(query, { owner, repo });
+      const result = await octokit.graphql<GitHubPullRequestsResponse>(query, {
+        owner,
+        repo,
+      });
       const prs = result.repository.pullRequests.nodes;
 
-      return prs.map((pr: any) => ({
-        id: pr.number.toString(),
-        number: pr.number,
-        title: pr.title,
-        author: pr.author.login,
-        headRefName: pr.headRefName,
-        baseRefName: pr.baseRefName,
-        updatedAt: pr.updatedAt,
-        url: pr.url,
-        status: pr.statusCheckRollup
-          ? this.mapStatus(pr.statusCheckRollup.state)
-          : "UNKNOWN",
-        mergeable: pr.mergeable,
-        headRepository: pr.headRepository,
-      }));
+      return prs
+        .map((pr): PullRequest => ({
+          id: pr.number.toString(),
+          number: pr.number,
+          title: pr.title,
+          author: pr.author.login,
+          headRefName: pr.headRefName,
+          baseRefName: pr.baseRefName,
+          updatedAt: pr.updatedAt,
+          url: pr.url,
+          status: pr.statusCheckRollup
+            ? this.mapStatus(pr.statusCheckRollup.state)
+            : "UNKNOWN",
+          mergeable: pr.mergeable,
+          headRepository: pr.headRepository,
+          labels: pr.labels?.nodes || [],
+        }))
+        .sort((a, b) => {
+          const aLow = a.labels?.some((l) => l.name === "priority:low");
+          const bLow = b.labels?.some((l) => l.name === "priority:low");
+
+          if (aLow && !bLow) {
+            return 1;
+          }
+          if (!aLow && bLow) {
+            return -1;
+          }
+          return (
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          );
+        });
     } catch (error) {
       console.error("Error listing PRs", error);
       throw error;
@@ -338,7 +397,7 @@ export class GitHubAdapter implements PullRequestProvider {
     `;
 
     try {
-      const result: any = await octokit.graphql(query, {
+      const result = await octokit.graphql<GitHubPullRequestsResponse>(query, {
         owner,
         repo,
         headName: branch,
