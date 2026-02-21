@@ -106,5 +106,4 @@ suite("createQuickPickItem", () => {
 
     assert.strictEqual(item.label, "$(check) Clean PR");
   });
-
 });

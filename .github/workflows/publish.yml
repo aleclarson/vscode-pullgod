@@ -2,7 +2,7 @@ name: Publish Extension
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build:
@@ -10,28 +10,28 @@ jobs:
     permissions:
       contents: read
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Check if tag is on main branch
-      run: |
-        if ! git branch -r --contains ${{ github.ref }} | grep -q "origin/main"; then
-          echo "Tag ${{ github.ref }} is not on the main branch. Skipping publish."
-          exit 0
-        fi
-    - uses: pnpm/action-setup@v4
-      with:
-        version: 9
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 20
-        cache: 'pnpm'
-    - run: pnpm install
-    - run: pnpm run compile
-    - run: npm install -g ovsx @vscode/vsce
-    - run: vsce publish --no-dependencies
-      env:
-        VSCE_PAT: ${{ secrets.VSCE_PAT }}
-    - run: ovsx publish --no-dependencies
-      env:
-        OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check if tag is on main branch
+        run: |
+          if ! git branch -r --contains ${{ github.ref }} | grep -q "origin/main"; then
+            echo "Tag ${{ github.ref }} is not on the main branch. Skipping publish."
+            exit 0
+          fi
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+      - run: pnpm install
+      - run: pnpm run compile
+      - run: npm install -g ovsx @vscode/vsce
+      - run: vsce publish --no-dependencies
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - run: ovsx publish --no-dependencies
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}

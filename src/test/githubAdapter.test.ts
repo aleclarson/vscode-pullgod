@@ -41,7 +41,12 @@ class MockExecutor implements Executor {
     if (command === "git" && args[0] === "remote" && args[1] === "-v") {
       return "origin\thttps://github.com/user/repo.git (fetch)\norigin\thttps://github.com/user/repo.git (push)";
     }
-    if (command === "git" && args[0] === "rev-parse" && args[1] === "--abbrev-ref" && args[2] === "HEAD") {
+    if (
+      command === "git" &&
+      args[0] === "rev-parse" &&
+      args[1] === "--abbrev-ref" &&
+      args[2] === "HEAD"
+    ) {
       return "feature-branch";
     }
     throw new Error(`Unexpected command: ${key}`);
@@ -60,20 +65,20 @@ class MockOctokit {
   public calls: any[] = [];
 
   graphql = async (query: string, variables?: any) => {
-    this.calls.push({ type: 'graphql', query, variables });
+    this.calls.push({ type: "graphql", query, variables });
     return this.graphqlResponse;
   };
 
   rest = {
     pulls: {
       get: async (params: any) => {
-        this.calls.push({ type: 'rest.pulls.get', params });
+        this.calls.push({ type: "rest.pulls.get", params });
         if (params.mediaType?.format === "diff") {
-             return { data: this.restPullsGetResponse.diff || "" };
+          return { data: this.restPullsGetResponse.diff || "" };
         }
         return { data: this.restPullsGetResponse };
-      }
-    }
+      },
+    },
   };
 }
 
@@ -138,7 +143,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       created_at: "date",
       updated_at: "date",
       head: { ref: "feature" },
-      base: { ref: "main" }
+      base: { ref: "main" },
     };
 
     const view = await adapter.getPullRequestView(pr);
@@ -157,7 +162,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
-      headRepository: { url: "url", owner: { login: "user" } } // Same owner
+      headRepository: { url: "url", owner: { login: "user" } }, // Same owner
     };
 
     // 1. Check if local branch exists
@@ -191,7 +196,10 @@ suite("GitHubAdapter Unit Test Suite", () => {
       "Should have called git checkout",
     );
     // Should verify it returned early (no fetch)
-    assert.ok(!executor.calls.some(c => c.startsWith("git fetch")), "Should not fetch");
+    assert.ok(
+      !executor.calls.some((c) => c.startsWith("git fetch")),
+      "Should not fetch",
+    );
   });
 
   test("checkoutPullRequest should fetch and pull if local branch is clean", async () => {
@@ -204,7 +212,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
-      headRepository: { url: "url", owner: { login: "user" } }
+      headRepository: { url: "url", owner: { login: "user" } },
     };
 
     executor.setResponse(
@@ -230,8 +238,14 @@ suite("GitHubAdapter Unit Test Suite", () => {
 
     await adapter.checkoutPullRequest(pr);
 
-    assert.ok(executor.calls.includes("git fetch origin"), "Should fetch origin");
-    assert.ok(executor.calls.includes("git pull origin feature-branch"), "Should pull origin feature-branch");
+    assert.ok(
+      executor.calls.includes("git fetch origin"),
+      "Should fetch origin",
+    );
+    assert.ok(
+      executor.calls.includes("git pull origin feature-branch"),
+      "Should pull origin feature-branch",
+    );
   });
 
   test("checkoutPullRequest should handle fork", async () => {
@@ -244,7 +258,10 @@ suite("GitHubAdapter Unit Test Suite", () => {
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
       url: "http://github.com/otheruser/repo/pull/123",
-      headRepository: { url: "https://github.com/otheruser/repo", owner: { login: "otheruser" } }
+      headRepository: {
+        url: "https://github.com/otheruser/repo",
+        owner: { login: "otheruser" },
+      },
     };
 
     // Branch does not exist locally
@@ -262,35 +279,58 @@ suite("GitHubAdapter Unit Test Suite", () => {
     // 2. git fetch otheruser
     // 3. git checkout -b fork-branch otheruser/fork-branch
 
-    executor.setResponse("git", ["remote", "add", "otheruser", "https://github.com/otheruser/repo"], "");
+    executor.setResponse(
+      "git",
+      ["remote", "add", "otheruser", "https://github.com/otheruser/repo"],
+      "",
+    );
     executor.setResponse("git", ["fetch", "otheruser"], "");
-    executor.setResponse("git", ["checkout", "-b", "fork-branch", "otheruser/fork-branch"], "");
+    executor.setResponse(
+      "git",
+      ["checkout", "-b", "fork-branch", "otheruser/fork-branch"],
+      "",
+    );
 
     await adapter.checkoutPullRequest(pr);
 
-    assert.ok(executor.calls.includes("git remote add otheruser https://github.com/otheruser/repo"), "Should add remote");
-    assert.ok(executor.calls.includes("git fetch otheruser"), "Should fetch remote");
-    assert.ok(executor.calls.includes("git checkout -b fork-branch otheruser/fork-branch"), "Should checkout branch");
+    assert.ok(
+      executor.calls.includes(
+        "git remote add otheruser https://github.com/otheruser/repo",
+      ),
+      "Should add remote",
+    );
+    assert.ok(
+      executor.calls.includes("git fetch otheruser"),
+      "Should fetch remote",
+    );
+    assert.ok(
+      executor.calls.includes(
+        "git checkout -b fork-branch otheruser/fork-branch",
+      ),
+      "Should checkout branch",
+    );
   });
 
   test("getCurrentPullRequest should return PullRequest object when graphql succeeds", async () => {
     authenticator.mockOctokit.graphqlResponse = {
       repository: {
         pullRequests: {
-          nodes: [{
-            number: 123,
-            title: "Current PR",
-            author: { login: "user" },
-            headRefName: "feature-branch",
-            baseRefName: "main",
-            updatedAt: new Date().toISOString(),
-            url: "http://github.com/user/repo/pull/123",
-            headRepository: { url: "url", owner: { login: "user" } },
-            mergeable: "MERGEABLE",
-            statusCheckRollup: { state: "SUCCESS" }
-          }]
-        }
-      }
+          nodes: [
+            {
+              number: 123,
+              title: "Current PR",
+              author: { login: "user" },
+              headRefName: "feature-branch",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              url: "http://github.com/user/repo/pull/123",
+              headRepository: { url: "url", owner: { login: "user" } },
+              mergeable: "MERGEABLE",
+              statusCheckRollup: { state: "SUCCESS" },
+            },
+          ],
+        },
+      },
     };
 
     const pr = await adapter.getCurrentPullRequest();
@@ -304,9 +344,9 @@ suite("GitHubAdapter Unit Test Suite", () => {
     authenticator.mockOctokit.graphqlResponse = {
       repository: {
         pullRequests: {
-          nodes: []
-        }
-      }
+          nodes: [],
+        },
+      },
     };
 
     const pr = await adapter.getCurrentPullRequest();
@@ -361,10 +401,10 @@ suite("GitHubAdapter Unit Test Suite", () => {
               url: "url4",
               statusCheckRollup: null,
               mergeable: "CONFLICTING",
-            }
-          ]
-        }
-      }
+            },
+          ],
+        },
+      },
     };
 
     const prs = await adapter.listPullRequests();
@@ -374,7 +414,10 @@ suite("GitHubAdapter Unit Test Suite", () => {
     assert.strictEqual(prs.find((p) => p.number === 2)?.status, "FAILURE");
     assert.strictEqual(prs.find((p) => p.number === 3)?.status, "PENDING");
     assert.strictEqual(prs.find((p) => p.number === 4)?.status, "UNKNOWN");
-    assert.strictEqual(prs.find((p) => p.number === 4)?.mergeable, "CONFLICTING");
+    assert.strictEqual(
+      prs.find((p) => p.number === 4)?.mergeable,
+      "CONFLICTING",
+    );
   });
 
   test("getOwnerRepo should handle repo names with dots", async () => {

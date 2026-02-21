@@ -41,7 +41,9 @@ export function activate(context: vscode.ExtensionContext) {
         try {
           await provider.openPullRequestOnWeb(pr);
         } catch (error) {
-          vscode.window.showErrorMessage(`Error opening PR on GitHub: ${error}`);
+          vscode.window.showErrorMessage(
+            `Error opening PR on GitHub: ${error}`,
+          );
         }
       },
     ),
