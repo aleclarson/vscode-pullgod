@@ -402,6 +402,17 @@ suite("GitHubAdapter Unit Test Suite", () => {
               statusCheckRollup: null,
               mergeable: "CONFLICTING",
             },
+            {
+              number: 5,
+              title: "PR 5",
+              author: { login: "user5" },
+              headRefName: "feature5",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              url: "url5",
+              statusCheckRollup: null,
+              mergeable: "UNKNOWN",
+            },
           ],
         },
       },
@@ -409,7 +420,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
 
     const prs = await adapter.listPullRequests();
 
-    assert.strictEqual(prs.length, 4);
+    assert.strictEqual(prs.length, 5);
     assert.strictEqual(prs.find((p) => p.number === 1)?.status, "SUCCESS");
     assert.strictEqual(prs.find((p) => p.number === 2)?.status, "FAILURE");
     assert.strictEqual(prs.find((p) => p.number === 3)?.status, "PENDING");
@@ -418,6 +429,8 @@ suite("GitHubAdapter Unit Test Suite", () => {
       prs.find((p) => p.number === 4)?.mergeable,
       "CONFLICTING",
     );
+    // PR 5: UNKNOWN (no checks)
+    assert.strictEqual(prs.find((p) => p.number === 5)?.status, "UNKNOWN");
   });
 
   test("getOwnerRepo should handle repo names with dots", async () => {
@@ -478,5 +491,97 @@ suite("GitHubAdapter Unit Test Suite", () => {
     assert.strictEqual(prs.length, 2);
     assert.strictEqual(prs[0].number, 2, "Normal PR should be first");
     assert.strictEqual(prs[1].number, 1, "Low priority PR should be last");
+  });
+
+  test("updateCurrentBranchIfClean should pull if clean and behind", async () => {
+    // 1. Get current branch
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      "feature-branch",
+    );
+
+    // 2. Check status (clean)
+    executor.setResponse("git", ["status", "--porcelain"], "");
+
+    // 3. Fetch
+    executor.setResponse("git", ["fetch"], "");
+
+    // 4. Check unpushed commits (clean)
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "feature-branch@{u}"],
+      "origin/feature-branch",
+    );
+    executor.setResponse(
+      "git",
+      ["log", "feature-branch@{u}..feature-branch", "--oneline"],
+      "",
+    );
+
+    // 5. Check if behind (yes)
+    executor.setResponse(
+      "git",
+      ["log", "HEAD..@{u}", "--oneline"],
+      "new commit",
+    );
+
+    // 6. Pull
+    executor.setResponse("git", ["pull"], "Already up to date.");
+
+    await adapter.updateCurrentBranchIfClean();
+
+    assert.ok(
+      executor.calls.includes("git pull"),
+      "Should have called git pull",
+    );
+  });
+
+  test("updateCurrentBranchIfClean should not pull if dirty", async () => {
+    // 1. Get current branch
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      "feature-branch",
+    );
+
+    // 2. Check status (dirty)
+    executor.setResponse("git", ["status", "--porcelain"], "M file.ts");
+
+    await adapter.updateCurrentBranchIfClean();
+
+    assert.ok(!executor.calls.includes("git fetch"), "Should NOT have fetched");
+    assert.ok(!executor.calls.includes("git pull"), "Should NOT have pulled");
+  });
+
+  test("updateCurrentBranchIfClean should not pull if unpushed commits", async () => {
+    // 1. Get current branch
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      "feature-branch",
+    );
+
+    // 2. Check status (clean)
+    executor.setResponse("git", ["status", "--porcelain"], "");
+
+    // 3. Fetch
+    executor.setResponse("git", ["fetch"], "");
+
+    // 4. Check unpushed commits (yes)
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "feature-branch@{u}"],
+      "origin/feature-branch",
+    );
+    executor.setResponse(
+      "git",
+      ["log", "feature-branch@{u}..feature-branch", "--oneline"],
+      "local commit",
+    );
+
+    await adapter.updateCurrentBranchIfClean();
+
+    assert.ok(!executor.calls.includes("git pull"), "Should NOT have pulled");
   });
 });

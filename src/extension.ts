@@ -85,6 +85,16 @@ export function activate(context: vscode.ExtensionContext) {
     }),
   );
 
+  const interval = setInterval(() => {
+    provider.updateCurrentBranchIfClean().catch((error) => {
+      console.error("Failed to update branch:", error);
+    });
+  }, 60000); // Check every minute
+
+  context.subscriptions.push({
+    dispose: () => clearInterval(interval),
+  });
+
   const disposable = vscode.commands.registerCommand(
     "pullgod.viewPullRequests",
     async () => {

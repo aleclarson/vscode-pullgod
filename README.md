@@ -17,6 +17,7 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
   - Automatically pulls and checks out the PR branch locally.
   - Prevents pulling if the local branch has unpushed commits to avoid accidental conflicts.
   - Integrates with the official "GitHub Pull Requests" extension by focusing its view after checkout.
+- **Auto-Update**: Periodically fetches and updates the current branch if it is clean and has no unpushed commits.
 - **Copy PR Summary**: Generate and copy a Markdown summary of the PR (including the diff) to your clipboard—perfect for AI-assisted coding or quick reviews.
 - **Clear Information**: Shows when each PR was last updated using relative time (e.g., "2 hours ago") and emphasizes PR numbers for easy identification.
 
