@@ -4,6 +4,12 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [Unreleased]
+
+### Added
+
+- Periodically fetch and update the current branch if clean and safe.
+
 ## [1.6.0] - 2026-02-20
 
 ### Added
