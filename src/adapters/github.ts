@@ -179,22 +179,24 @@ export class GitHubAdapter implements PullRequestProvider {
       const prs = result.repository.pullRequests.nodes;
 
       return prs
-        .map((pr): PullRequest => ({
-          id: pr.number.toString(),
-          number: pr.number,
-          title: pr.title,
-          author: pr.author.login,
-          headRefName: pr.headRefName,
-          baseRefName: pr.baseRefName,
-          updatedAt: pr.updatedAt,
-          url: pr.url,
-          status: pr.statusCheckRollup
-            ? this.mapStatus(pr.statusCheckRollup.state)
-            : "UNKNOWN",
-          mergeable: pr.mergeable,
-          headRepository: pr.headRepository,
-          labels: pr.labels?.nodes || [],
-        }))
+        .map(
+          (pr): PullRequest => ({
+            id: pr.number.toString(),
+            number: pr.number,
+            title: pr.title,
+            author: pr.author.login,
+            headRefName: pr.headRefName,
+            baseRefName: pr.baseRefName,
+            updatedAt: pr.updatedAt,
+            url: pr.url,
+            status: pr.statusCheckRollup
+              ? this.mapStatus(pr.statusCheckRollup.state)
+              : "UNKNOWN",
+            mergeable: pr.mergeable,
+            headRepository: pr.headRepository,
+            labels: pr.labels?.nodes || [],
+          }),
+        )
         .sort((a, b) => {
           const aLow = a.labels?.some((l) => l.name === "priority:low");
           const bLow = b.labels?.some((l) => l.name === "priority:low");
