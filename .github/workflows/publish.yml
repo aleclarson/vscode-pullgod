@@ -11,6 +11,14 @@ jobs:
       contents: read
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Check if tag is on main branch
+      run: |
+        if ! git branch -r --contains ${{ github.ref }} | grep -q "origin/main"; then
+          echo "Tag ${{ github.ref }} is not on the main branch. Skipping publish."
+          exit 0
+        fi
     - uses: pnpm/action-setup@v4
       with:
         version: 9
