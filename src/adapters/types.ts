@@ -10,6 +10,7 @@ export interface PullRequest {
   status?: string;
   mergeable?: string;
   headRepository?: { url: string; owner: { login: string } };
+  labels?: { name: string }[];
 }
 
 export interface PullRequestProvider {
