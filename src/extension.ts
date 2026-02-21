@@ -314,10 +314,26 @@ export function activate(context: vscode.ExtensionContext) {
             );
 
             try {
-              await vscode.commands.executeCommand("pr.openDescription");
+              const match = selected.pr.url.match(
+                /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
+              );
+              if (match) {
+                const [, owner, repo] = match;
+                const uri = vscode.Uri.from({
+                  scheme: vscode.env.uriScheme,
+                  authority: "GitHub.vscode-pull-request-github",
+                  path: "/open-pull-request-webview",
+                  query: JSON.stringify({
+                    owner,
+                    repo,
+                    pullRequestNumber: selected.pr.number,
+                  }),
+                });
+                await vscode.env.openExternal(uri);
+              }
             } catch (error) {
               outputChannel.appendLine(
-                `Failed to open pull request description: ${error}`,
+                `Failed to open pull request description via URI: ${error}`,
               );
             }
 
