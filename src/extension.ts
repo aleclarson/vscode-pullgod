@@ -421,20 +421,34 @@ export function activate(context: vscode.ExtensionContext) {
                   "Low priority pull request",
                 );
 
-                const updates: Promise<void>[] = [];
+                const tasks: (() => Promise<void>)[] = [];
 
                 for (const item of items) {
                   const wasLow = item.picked;
                   const isLow = selectedPRs.has(item.pr.number);
 
                   if (wasLow && !isLow) {
-                    updates.push(provider.removeLabel(item.pr, "priority:low"));
+                    tasks.push(() =>
+                      provider.removeLabel(item.pr, "priority:low"),
+                    );
                   } else if (!wasLow && isLow) {
-                    updates.push(provider.addLabel(item.pr, "priority:low"));
+                    tasks.push(() => provider.addLabel(item.pr, "priority:low"));
                   }
                 }
 
-                await Promise.all(updates);
+                const increment = 100 / (tasks.length || 1);
+                for (let i = 0; i < tasks.length; i++) {
+                  progress.report({
+                    message: `Updating PR ${i + 1}/${tasks.length}`,
+                    increment,
+                  });
+                  await tasks[i]();
+                  // Rate limit mitigation: sleep 250ms
+                  if (i < tasks.length - 1) {
+                    await new Promise((r) => setTimeout(r, 250));
+                  }
+                }
+
                 vscode.window.showInformationMessage(
                   "PR priorities updated successfully.",
                 );
