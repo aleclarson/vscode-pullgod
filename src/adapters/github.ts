@@ -179,22 +179,24 @@ export class GitHubAdapter implements PullRequestProvider {
       const prs = result.repository.pullRequests.nodes;
 
       return prs
-        .map((pr): PullRequest => ({
-          id: pr.number.toString(),
-          number: pr.number,
-          title: pr.title,
-          author: pr.author.login,
-          headRefName: pr.headRefName,
-          baseRefName: pr.baseRefName,
-          updatedAt: pr.updatedAt,
-          url: pr.url,
-          status: pr.statusCheckRollup
-            ? this.mapStatus(pr.statusCheckRollup.state)
-            : "UNKNOWN",
-          mergeable: pr.mergeable,
-          headRepository: pr.headRepository,
-          labels: pr.labels?.nodes || [],
-        }))
+        .map(
+          (pr): PullRequest => ({
+            id: pr.number.toString(),
+            number: pr.number,
+            title: pr.title,
+            author: pr.author.login,
+            headRefName: pr.headRefName,
+            baseRefName: pr.baseRefName,
+            updatedAt: pr.updatedAt,
+            url: pr.url,
+            status: pr.statusCheckRollup
+              ? this.mapStatus(pr.statusCheckRollup.state)
+              : "UNKNOWN",
+            mergeable: pr.mergeable,
+            headRepository: pr.headRepository,
+            labels: pr.labels?.nodes || [],
+          }),
+        )
         .sort((a, b) => {
           const aLow = a.labels?.some((l) => l.name === "priority:low");
           const bLow = b.labels?.some((l) => l.name === "priority:low");
@@ -433,50 +435,6 @@ export class GitHubAdapter implements PullRequestProvider {
       return await this.exec("git", ["rev-parse", "--abbrev-ref", "HEAD"]);
     } catch (error) {
       return "";
-    }
-  }
-
-  async updateCurrentBranchIfClean(): Promise<void> {
-    try {
-      const branch = await this.getCurrentBranch();
-      if (!branch) {
-        return;
-      }
-
-      const status = await this.exec("git", ["status", "--porcelain"]);
-      if (status.trim().length > 0) {
-        return;
-      }
-
-      try {
-        await this.exec("git", ["fetch"]);
-      } catch (error) {
-        // Ignore fetch errors (e.g. network issues)
-        return;
-      }
-
-      if (await this.hasUnpushedCommits(branch)) {
-        return;
-      }
-
-      // Check if behind
-      try {
-        const behind = await this.exec("git", [
-          "log",
-          "HEAD..@{u}",
-          "--oneline",
-        ]);
-        if (behind.trim().length === 0) {
-          return;
-        }
-      } catch (error) {
-        // If @{u} fails (no upstream), return
-        return;
-      }
-
-      await this.exec("git", ["pull"]);
-    } catch (error) {
-      // Ignore all other errors to avoid disrupting user
     }
   }
 }

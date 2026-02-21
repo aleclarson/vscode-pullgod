@@ -21,5 +21,4 @@ export interface PullRequestProvider {
   openPullRequestOnWeb(pr?: PullRequest): Promise<void>;
   getCurrentPullRequest(): Promise<PullRequest | undefined>;
   getCurrentBranch(): Promise<string>;
-  updateCurrentBranchIfClean(): Promise<void>;
 }

@@ -1,0 +1,43 @@
+name: Check Changelog
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  check-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CHANGELOG.md is modified
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            changelog:
+              - 'CHANGELOG.md'
+
+      - name: Check commit messages for 'feat'
+        id: check_commits
+        run: |
+          # Check all commits in the PR for messages starting with 'feat'
+          commits=$(git log --format=%s origin/${{ github.base_ref }}..HEAD)
+          echo "Commits in PR:"
+          echo "$commits"
+          if echo "$commits" | grep -q "^feat"; then
+            echo "has_feat=true" >> $GITHUB_OUTPUT
+            echo "Found commit starting with 'feat'."
+          else
+            echo "has_feat=false" >> $GITHUB_OUTPUT
+            echo "No commit starting with 'feat' found."
+          fi
+
+      - name: Fail if CHANGELOG.md is not modified for feature PRs
+        if: steps.check_commits.outputs.has_feat == 'true' && steps.changes.outputs.changelog == 'false'
+        run: |
+          echo "Error: CHANGELOG.md must be modified because this Pull Request contains a feature commit (starts with 'feat')."
+          exit 1
