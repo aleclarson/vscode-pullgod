@@ -22,4 +22,11 @@ export interface PullRequestProvider {
   getCurrentPullRequest(): Promise<PullRequest | undefined>;
   getCurrentBranch(): Promise<string>;
   updateCurrentBranchIfClean(): Promise<void>;
+  ensureLabelExists(
+    label: string,
+    color: string,
+    description: string,
+  ): Promise<void>;
+  addLabel(pr: PullRequest, label: string): Promise<void>;
+  removeLabel(pr: PullRequest, label: string): Promise<void>;
 }

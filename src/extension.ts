@@ -374,6 +374,86 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(disposable);
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pullgod.updatePriorities", async () => {
+      const quickPick = vscode.window.createQuickPick<
+        vscode.QuickPickItem & { pr: PullRequest }
+      >();
+      quickPick.canSelectMany = true;
+      quickPick.placeholder = "Select PRs to mark as Low Priority...";
+      quickPick.busy = true;
+      quickPick.show();
+
+      try {
+        const prs = await provider.listPullRequests();
+        const items = prs.map((pr) => {
+          const props = createQuickPickItem(pr);
+          return {
+            ...props,
+            pr,
+            picked: pr.labels?.some((l) => l.name === "priority:low"),
+          };
+        });
+
+        quickPick.items = items;
+        quickPick.selectedItems = items.filter((i) => i.picked);
+        quickPick.busy = false;
+
+        quickPick.onDidAccept(async () => {
+          const selectedPRs = new Set(
+            quickPick.selectedItems.map((i) => i.pr.number),
+          );
+          quickPick.hide();
+
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: "Updating PR priorities...",
+              cancellable: false,
+            },
+            async (progress) => {
+              try {
+                // Ensure label exists
+                await provider.ensureLabelExists(
+                  "priority:low",
+                  "c2e0c6",
+                  "Low priority pull request",
+                );
+
+                const updates: Promise<void>[] = [];
+
+                for (const item of items) {
+                  const wasLow = item.picked;
+                  const isLow = selectedPRs.has(item.pr.number);
+
+                  if (wasLow && !isLow) {
+                    updates.push(provider.removeLabel(item.pr, "priority:low"));
+                  } else if (!wasLow && isLow) {
+                    updates.push(provider.addLabel(item.pr, "priority:low"));
+                  }
+                }
+
+                await Promise.all(updates);
+                vscode.window.showInformationMessage(
+                  "PR priorities updated successfully.",
+                );
+              } catch (error) {
+                vscode.window.showErrorMessage(
+                  `Error updating PR priorities: ${error}`,
+                );
+              }
+            },
+          );
+        });
+      } catch (error) {
+        vscode.window.showErrorMessage(
+          `Error fetching pull requests: ${error}`,
+        );
+        quickPick.hide();
+      }
+    }),
+  );
 }
 
 export function deactivate() {}

@@ -26,6 +26,10 @@
       {
         "command": "pullgod.copyPRSummary",
         "title": "Pullgod: Copy PR Summary to Clipboard"
+      },
+      {
+        "command": "pullgod.updatePriorities",
+        "title": "Pullgod: Update PR Priorities"
       }
     ],
     "menus": {
