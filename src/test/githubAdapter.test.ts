@@ -3,6 +3,7 @@ import { GitHubAdapter } from "../adapters/github";
 import { Executor, Workspace } from "../adapters/system";
 import { PullRequest } from "../adapters/types";
 import { Authenticator } from "../adapters/authenticator";
+import type { Octokit } from "octokit" with { "resolution-mode": "import" };
 
 class MockExecutor implements Executor {
   private responses: Record<string, string> = {};
@@ -79,8 +80,8 @@ class MockOctokit {
 class MockAuthenticator implements Authenticator {
   public mockOctokit = new MockOctokit();
 
-  async getOctokit(): Promise<any> {
-    return this.mockOctokit;
+  async getOctokit(): Promise<Octokit> {
+    return this.mockOctokit as unknown as Octokit;
   }
 }
 

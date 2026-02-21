@@ -1,14 +1,12 @@
 import * as vscode from "vscode";
-// We use 'any' for Octokit return type to avoid complex type import issues
-// with ESM-only package in CommonJS environment, or we could use import type.
-// For now, let's try to keep it simple.
+import type { Octokit } from "octokit" with { "resolution-mode": "import" };
 
 export interface Authenticator {
-  getOctokit(): Promise<any>;
+  getOctokit(): Promise<Octokit>;
 }
 
 export class VSCodeAuthenticator implements Authenticator {
-  async getOctokit(): Promise<any> {
+  async getOctokit(): Promise<Octokit> {
     const session = await vscode.authentication.getSession(
       "github",
       ["repo", "read:user"],
