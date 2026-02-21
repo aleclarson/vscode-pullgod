@@ -8,7 +8,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
-- Periodically fetch and update the current branch if clean and safe.
+- A GitHub workflow that enforces `CHANGELOG.md` updates in every Pull Request.
 
 ## [1.6.0] - 2026-02-20
 
