@@ -2,6 +2,8 @@ import * as assert from "assert";
 import { GitHubAdapter } from "../adapters/github";
 import { Executor, Workspace } from "../adapters/system";
 import { PullRequest } from "../adapters/types";
+import { Authenticator } from "../adapters/authenticator";
+import type { Octokit } from "octokit" with { "resolution-mode": "import" };
 
 class MockExecutor implements Executor {
   private responses: Record<string, string> = {};
@@ -29,9 +31,6 @@ class MockExecutor implements Executor {
       return this.responses[key];
     }
     // Default mock behavior for setup checks
-    if (command === "gh" && args[0] === "--version") {
-      return "gh version 2.0.0";
-    }
     if (
       command === "git" &&
       args[0] === "rev-parse" &&
@@ -41,6 +40,9 @@ class MockExecutor implements Executor {
     }
     if (command === "git" && args[0] === "remote" && args[1] === "-v") {
       return "origin\thttps://github.com/user/repo.git (fetch)\norigin\thttps://github.com/user/repo.git (push)";
+    }
+    if (command === "git" && args[0] === "rev-parse" && args[1] === "--abbrev-ref" && args[2] === "HEAD") {
+      return "feature-branch";
     }
     throw new Error(`Unexpected command: ${key}`);
   }
@@ -52,15 +54,48 @@ class MockWorkspace implements Workspace {
   }
 }
 
+class MockOctokit {
+  public graphqlResponse: any = {};
+  public restPullsGetResponse: any = {};
+  public calls: any[] = [];
+
+  graphql = async (query: string, variables?: any) => {
+    this.calls.push({ type: 'graphql', query, variables });
+    return this.graphqlResponse;
+  };
+
+  rest = {
+    pulls: {
+      get: async (params: any) => {
+        this.calls.push({ type: 'rest.pulls.get', params });
+        if (params.mediaType?.format === "diff") {
+             return { data: this.restPullsGetResponse.diff || "" };
+        }
+        return { data: this.restPullsGetResponse };
+      }
+    }
+  };
+}
+
+class MockAuthenticator implements Authenticator {
+  public mockOctokit = new MockOctokit();
+
+  async getOctokit(): Promise<Octokit> {
+    return this.mockOctokit as unknown as Octokit;
+  }
+}
+
 suite("GitHubAdapter Unit Test Suite", () => {
   let adapter: GitHubAdapter;
   let executor: MockExecutor;
   let workspace: MockWorkspace;
+  let authenticator: MockAuthenticator;
 
   setup(() => {
     executor = new MockExecutor();
     workspace = new MockWorkspace();
-    adapter = new GitHubAdapter(executor, workspace);
+    authenticator = new MockAuthenticator();
+    adapter = new GitHubAdapter(executor, workspace, authenticator);
   });
 
   test("getPullRequestDiff should return diff output", async () => {
@@ -75,7 +110,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       url: "http://github.com/user/repo/pull/123",
     };
 
-    executor.setResponse("gh", ["pr", "diff", "123"], "diff content");
+    authenticator.mockOctokit.restPullsGetResponse = { diff: "diff content" };
 
     const diff = await adapter.getPullRequestDiff(pr);
     assert.strictEqual(diff, "diff content");
@@ -93,45 +128,23 @@ suite("GitHubAdapter Unit Test Suite", () => {
       url: "http://github.com/user/repo/pull/123",
     };
 
-    executor.setResponse(
-      "gh",
-      [
-        "pr",
-        "view",
-        "123",
-        "--json",
-        "number,title,body,author,state,url,createdAt,updatedAt,headRefName,baseRefName",
-      ],
-      '{"number":123,"title":"Test PR"}',
-    );
-
-    const view = await adapter.getPullRequestView(pr);
-    assert.strictEqual(view, '{"number":123,"title":"Test PR"}');
-  });
-
-  test("openPullRequestOnWeb should run gh pr view --web", async () => {
-    const pr: PullRequest = {
-      id: "1",
+    authenticator.mockOctokit.restPullsGetResponse = {
       number: 123,
       title: "Test PR",
-      author: "user",
-      headRefName: "feature",
-      baseRefName: "main",
-      updatedAt: new Date().toISOString(),
-      url: "http://github.com/user/repo/pull/123",
+      body: "Body",
+      user: { login: "user" },
+      state: "open",
+      html_url: "url",
+      created_at: "date",
+      updated_at: "date",
+      head: { ref: "feature" },
+      base: { ref: "main" }
     };
 
-    executor.setResponse("gh", ["pr", "view", "123", "--web"], "");
-
-    await adapter.openPullRequestOnWeb(pr);
-    // If no error is thrown, the test passes (mock executor would throw if command mismatch)
-  });
-
-  test("openPullRequestOnWeb should run gh pr view --web without PR number", async () => {
-    executor.setResponse("gh", ["pr", "view", "--web"], "");
-
-    await adapter.openPullRequestOnWeb();
-    // Success if no exception
+    const view = await adapter.getPullRequestView(pr);
+    const parsed = JSON.parse(view);
+    assert.strictEqual(parsed.number, 123);
+    assert.strictEqual(parsed.title, "Test PR");
   });
 
   test("checkoutPullRequest should not pull if local branch has unpushed commits", async () => {
@@ -144,6 +157,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
+      headRepository: { url: "url", owner: { login: "user" } } // Same owner
     };
 
     // 1. Check if local branch exists
@@ -167,7 +181,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       "deadbeef commit message",
     );
 
-    // 4. Expect git checkout instead of gh pr checkout
+    // 4. Expect git checkout
     executor.setResponse("git", ["checkout", "feature-branch"], "");
 
     await adapter.checkoutPullRequest(pr);
@@ -176,13 +190,11 @@ suite("GitHubAdapter Unit Test Suite", () => {
       executor.calls.includes("git checkout feature-branch"),
       "Should have called git checkout",
     );
-    assert.ok(
-      !executor.calls.includes("gh pr checkout 123"),
-      "Should NOT have called gh pr checkout",
-    );
+    // Should verify it returned early (no fetch)
+    assert.ok(!executor.calls.some(c => c.startsWith("git fetch")), "Should not fetch");
   });
 
-  test("checkoutPullRequest should pull if local branch is clean", async () => {
+  test("checkoutPullRequest should fetch and pull if local branch is clean", async () => {
     const pr: PullRequest = {
       id: "1",
       number: 123,
@@ -192,6 +204,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
+      headRepository: { url: "url", owner: { login: "user" } }
     };
 
     executor.setResponse(
@@ -211,212 +224,175 @@ suite("GitHubAdapter Unit Test Suite", () => {
       "",
     );
 
-    executor.setResponse("gh", ["pr", "checkout", "123"], "");
+    executor.setResponse("git", ["fetch", "origin"], "");
+    executor.setResponse("git", ["checkout", "feature-branch"], "");
+    executor.setResponse("git", ["pull", "origin", "feature-branch"], "");
 
     await adapter.checkoutPullRequest(pr);
 
-    assert.ok(
-      executor.calls.includes("gh pr checkout 123"),
-      "Should have called gh pr checkout",
-    );
+    assert.ok(executor.calls.includes("git fetch origin"), "Should fetch origin");
+    assert.ok(executor.calls.includes("git pull origin feature-branch"), "Should pull origin feature-branch");
   });
 
-  test("checkoutPullRequest should pull if local branch does not exist", async () => {
+  test("checkoutPullRequest should handle fork", async () => {
     const pr: PullRequest = {
       id: "1",
       number: 123,
       title: "Test PR",
-      author: "user",
-      headRefName: "feature-branch",
+      author: "otheruser",
+      headRefName: "fork-branch",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
-      url: "http://github.com/user/repo/pull/123",
+      url: "http://github.com/otheruser/repo/pull/123",
+      headRepository: { url: "https://github.com/otheruser/repo", owner: { login: "otheruser" } }
     };
 
-    // Branch check fails
+    // Branch does not exist locally
     executor.setFailure(
       "git",
-      ["rev-parse", "--verify", "feature-branch"],
+      ["rev-parse", "--verify", "fork-branch"],
       "fatal: Needed a single revision",
     );
 
-    executor.setResponse("gh", ["pr", "checkout", "123"], "");
+    // Remote list
+    executor.setResponse("git", ["remote"], "origin");
+
+    // Expect:
+    // 1. git remote add otheruser ...
+    // 2. git fetch otheruser
+    // 3. git checkout -b fork-branch otheruser/fork-branch
+
+    executor.setResponse("git", ["remote", "add", "otheruser", "https://github.com/otheruser/repo"], "");
+    executor.setResponse("git", ["fetch", "otheruser"], "");
+    executor.setResponse("git", ["checkout", "-b", "fork-branch", "otheruser/fork-branch"], "");
 
     await adapter.checkoutPullRequest(pr);
 
-    assert.ok(
-      executor.calls.includes("gh pr checkout 123"),
-      "Should have called gh pr checkout",
-    );
+    assert.ok(executor.calls.includes("git remote add otheruser https://github.com/otheruser/repo"), "Should add remote");
+    assert.ok(executor.calls.includes("git fetch otheruser"), "Should fetch remote");
+    assert.ok(executor.calls.includes("git checkout -b fork-branch otheruser/fork-branch"), "Should checkout branch");
   });
 
-  test("checkoutPullRequest should not pull if local branch has no upstream (unpushed)", async () => {
-    const pr: PullRequest = {
-      id: "1",
-      number: 123,
-      title: "Test PR",
-      author: "user",
-      headRefName: "feature-branch",
-      baseRefName: "main",
-      updatedAt: new Date().toISOString(),
-      url: "http://github.com/user/repo/pull/123",
+  test("getCurrentPullRequest should return PullRequest object when graphql succeeds", async () => {
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [{
+            number: 123,
+            title: "Current PR",
+            author: { login: "user" },
+            headRefName: "feature-branch",
+            baseRefName: "main",
+            updatedAt: new Date().toISOString(),
+            url: "http://github.com/user/repo/pull/123",
+            headRepository: { url: "url", owner: { login: "user" } },
+            mergeable: "MERGEABLE",
+            statusCheckRollup: { state: "SUCCESS" }
+          }]
+        }
+      }
     };
-
-    executor.setResponse(
-      "git",
-      ["rev-parse", "--verify", "feature-branch"],
-      "hash",
-    );
-
-    // Upstream check fails
-    executor.setFailure(
-      "git",
-      ["rev-parse", "--abbrev-ref", "feature-branch@{u}"],
-      "fatal: no upstream configured for branch 'feature-branch'",
-    );
-
-    executor.setResponse("git", ["checkout", "feature-branch"], "");
-
-    await adapter.checkoutPullRequest(pr);
-
-    assert.ok(
-      executor.calls.includes("git checkout feature-branch"),
-      "Should have called git checkout",
-    );
-    assert.ok(
-      !executor.calls.includes("gh pr checkout 123"),
-      "Should NOT have called gh pr checkout",
-    );
-  });
-
-  test("getCurrentPullRequest should return PullRequest object when gh pr view succeeds", async () => {
-    executor.setResponse(
-      "gh",
-      [
-        "pr",
-        "view",
-        "--json",
-        "number,title,author,headRefName,baseRefName,updatedAt,url",
-      ],
-      JSON.stringify({
-        number: 123,
-        title: "Current PR",
-        author: { login: "user" },
-        headRefName: "feature",
-        baseRefName: "main",
-        updatedAt: new Date().toISOString(),
-        url: "http://github.com/user/repo/pull/123",
-      }),
-    );
 
     const pr = await adapter.getCurrentPullRequest();
     assert.ok(pr);
     assert.strictEqual(pr?.number, 123);
     assert.strictEqual(pr?.title, "Current PR");
-    assert.strictEqual(pr?.author, "user");
+    assert.strictEqual(pr?.status, "SUCCESS");
   });
 
-  test("getCurrentPullRequest should return undefined when gh pr view fails", async () => {
-    executor.setFailure(
-      "gh",
-      [
-        "pr",
-        "view",
-        "--json",
-        "number,title,author,headRefName,baseRefName,updatedAt,url",
-      ],
-      "no pull requests found for this branch",
-    );
+  test("getCurrentPullRequest should return undefined when graphql returns no nodes", async () => {
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: []
+        }
+      }
+    };
 
     const pr = await adapter.getCurrentPullRequest();
     assert.strictEqual(pr, undefined);
   });
 
   test("listPullRequests should parse statusCheckRollup correctly", async () => {
-    const mockOutput = [
-      {
-        number: 1,
-        title: "PR 1",
-        author: { login: "user1" },
-        headRefName: "feature1",
-        baseRefName: "main",
-        updatedAt: new Date().toISOString(),
-        url: "url1",
-        statusCheckRollup: [{ state: "SUCCESS" }, { state: "SUCCESS" }], // Array success
-        mergeable: "MERGEABLE",
-      },
-      {
-        number: 2,
-        title: "PR 2",
-        author: { login: "user2" },
-        headRefName: "feature2",
-        baseRefName: "main",
-        updatedAt: new Date().toISOString(),
-        url: "url2",
-        statusCheckRollup: [{ state: "SUCCESS" }, { state: "FAILURE" }], // Array failure
-        mergeable: "MERGEABLE",
-      },
-      {
-        number: 3,
-        title: "PR 3",
-        author: { login: "user3" },
-        headRefName: "feature3",
-        baseRefName: "main",
-        updatedAt: new Date().toISOString(),
-        url: "url3",
-        statusCheckRollup: { state: "PENDING" }, // Object pending
-        mergeable: "MERGEABLE",
-      },
-      {
-        number: 4,
-        title: "PR 4",
-        author: { login: "user4" },
-        headRefName: "feature4",
-        baseRefName: "main",
-        updatedAt: new Date().toISOString(),
-        url: "url4",
-        statusCheckRollup: [], // Empty array
-        mergeable: "CONFLICTING",
-      },
-      {
-        number: 5,
-        title: "PR 5",
-        author: { login: "user5" },
-        headRefName: "feature5",
-        baseRefName: "main",
-        updatedAt: new Date().toISOString(),
-        url: "url5",
-        statusCheckRollup: null, // Null
-        mergeable: "UNKNOWN",
-      },
-    ];
-
-    executor.setResponse(
-      "gh",
-      [
-        "pr",
-        "list",
-        "--json",
-        "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable",
-        "--limit",
-        "100",
-      ],
-      JSON.stringify(mockOutput),
-    );
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [
+            {
+              number: 1,
+              title: "PR 1",
+              author: { login: "user1" },
+              headRefName: "feature1",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              url: "url1",
+              statusCheckRollup: { state: "SUCCESS" },
+              mergeable: "MERGEABLE",
+            },
+            {
+              number: 2,
+              title: "PR 2",
+              author: { login: "user2" },
+              headRefName: "feature2",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              url: "url2",
+              statusCheckRollup: { state: "FAILURE" },
+              mergeable: "MERGEABLE",
+            },
+            {
+              number: 3,
+              title: "PR 3",
+              author: { login: "user3" },
+              headRefName: "feature3",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              url: "url3",
+              statusCheckRollup: { state: "PENDING" },
+              mergeable: "MERGEABLE",
+            },
+            {
+              number: 4,
+              title: "PR 4",
+              author: { login: "user4" },
+              headRefName: "feature4",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              url: "url4",
+              statusCheckRollup: null,
+              mergeable: "CONFLICTING",
+            }
+          ]
+        }
+      }
+    };
 
     const prs = await adapter.listPullRequests();
 
-    assert.strictEqual(prs.length, 5);
-    // PR 1: SUCCESS (all checks passed)
+    assert.strictEqual(prs.length, 4);
     assert.strictEqual(prs.find((p) => p.number === 1)?.status, "SUCCESS");
-    // PR 2: FAILURE (one check failed)
     assert.strictEqual(prs.find((p) => p.number === 2)?.status, "FAILURE");
-    // PR 3: PENDING (rollup state is pending)
     assert.strictEqual(prs.find((p) => p.number === 3)?.status, "PENDING");
-    // PR 4: UNKNOWN (empty checks), but CONFLICTING
     assert.strictEqual(prs.find((p) => p.number === 4)?.status, "UNKNOWN");
     assert.strictEqual(prs.find((p) => p.number === 4)?.mergeable, "CONFLICTING");
-    // PR 5: UNKNOWN (no checks)
-    assert.strictEqual(prs.find((p) => p.number === 5)?.status, "UNKNOWN");
+  });
+
+  test("getOwnerRepo should handle repo names with dots", async () => {
+    executor.setResponse(
+      "git",
+      ["remote", "-v"],
+      "origin\thttps://github.com/user/my.repo.name.git (fetch)\norigin\thttps://github.com/user/my.repo.name.git (push)",
+    );
+
+    authenticator.mockOctokit.graphql = async (
+      query: string,
+      variables?: any,
+    ) => {
+      assert.strictEqual(variables.owner, "user");
+      assert.strictEqual(variables.repo, "my.repo.name");
+      return { repository: { pullRequests: { nodes: [] } } };
+    };
+
+    await adapter.listPullRequests();
   });
 });

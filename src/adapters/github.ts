@@ -1,16 +1,21 @@
 import { PullRequest, PullRequestProvider } from "./types";
 import { Executor, NodeExecutor, Workspace, VSCodeWorkspace } from "./system";
+import { Authenticator } from "./authenticator";
+import * as vscode from "vscode";
 
 export class GitHubAdapter implements PullRequestProvider {
   private executor: Executor;
   private workspace: Workspace;
+  private authenticator?: Authenticator;
 
   constructor(
     executor: Executor = new NodeExecutor(),
     workspace: Workspace = new VSCodeWorkspace(),
+    authenticator?: Authenticator,
   ) {
     this.executor = executor;
     this.workspace = workspace;
+    this.authenticator = authenticator;
   }
 
   private async exec(command: string, args: string[]): Promise<string> {
@@ -21,25 +26,46 @@ export class GitHubAdapter implements PullRequestProvider {
     return this.executor.exec(command, args, workspaceFolder);
   }
 
-  private async checkGhInstalled(): Promise<void> {
-    try {
-      await this.exec("gh", ["--version"]);
-    } catch (error) {
-      throw new Error(
-        "The GitHub CLI (gh) is not installed or not in your PATH. Please install it from https://cli.github.com/",
-      );
-    }
-  }
-
-  private async checkIsGitHubRepo(): Promise<void> {
+  private async getOwnerRepo(): Promise<{ owner: string; repo: string }> {
     try {
       await this.exec("git", ["rev-parse", "--is-inside-work-tree"]);
       const remotes = await this.exec("git", ["remote", "-v"]);
-      if (!remotes.includes("github.com")) {
-        throw new Error(
-          "This project does not appear to have a GitHub remote.",
-        );
+
+      const lines = remotes.split("\n");
+      // Find origin first
+      const originLine = lines.find(
+        (l) =>
+          l.trim().startsWith("origin") &&
+          l.includes("github.com") &&
+          l.includes("(fetch)"),
+      );
+      if (originLine) {
+        const match = originLine.match(/github\.com[:/]([^\/]+)\/([^\s]+)/);
+        if (match) {
+          let repo = match[2];
+          if (repo.endsWith(".git")) {
+            repo = repo.slice(0, -4);
+          }
+          return { owner: match[1], repo };
+        }
       }
+
+      // Fallback to any github remote
+      const anyLine = lines.find(
+        (l) => l.includes("github.com") && l.includes("(fetch)"),
+      );
+      if (anyLine) {
+        const match = anyLine.match(/github\.com[:/]([^\/]+)\/([^\s]+)/);
+        if (match) {
+          let repo = match[2];
+          if (repo.endsWith(".git")) {
+            repo = repo.slice(0, -4);
+          }
+          return { owner: match[1], repo };
+        }
+      }
+
+      throw new Error("This project does not appear to have a GitHub remote.");
     } catch (error) {
       if (
         error instanceof Error &&
@@ -51,103 +77,83 @@ export class GitHubAdapter implements PullRequestProvider {
     }
   }
 
-  private parseStatus(statusCheckRollup: any): string {
-    if (!statusCheckRollup) {
+  private mapStatus(state: string | undefined): string {
+    if (!state) {
       return "UNKNOWN";
     }
-
-    if (Array.isArray(statusCheckRollup)) {
-      if (statusCheckRollup.length === 0) {
-        return "UNKNOWN";
-      }
-      let hasFailure = false;
-      let hasPending = false;
-
-      for (const check of statusCheckRollup) {
-        const state = check.state || check.conclusion || check.status;
-        if (!state) {
-          continue;
-        }
-
-        const s = state.toUpperCase();
-        if (
-          [
-            "FAILURE",
-            "ERROR",
-            "CANCELLED",
-            "TIMED_OUT",
-            "ACTION_REQUIRED",
-          ].includes(s)
-        ) {
-          hasFailure = true;
-          break;
-        }
-        if (["PENDING", "IN_PROGRESS", "QUEUED", "WAITING"].includes(s)) {
-          hasPending = true;
-        }
-      }
-
-      if (hasFailure) {
+    switch (state) {
+      case "FAILURE":
+      case "ERROR":
         return "FAILURE";
-      }
-      if (hasPending) {
+      case "PENDING":
         return "PENDING";
-      }
-      return "SUCCESS";
-    } else if (typeof statusCheckRollup === "object") {
-      const state = statusCheckRollup.state || statusCheckRollup.status;
-      if (!state) {
-        return "UNKNOWN";
-      }
-
-      const s = state.toUpperCase();
-      if (
-        [
-          "FAILURE",
-          "ERROR",
-          "CANCELLED",
-          "TIMED_OUT",
-          "ACTION_REQUIRED",
-        ].includes(s)
-      ) {
-        return "FAILURE";
-      }
-      if (["PENDING", "IN_PROGRESS", "QUEUED", "WAITING"].includes(s)) {
-        return "PENDING";
-      }
-      if (["SUCCESS", "NEUTRAL", "SKIPPED", "COMPLETED"].includes(s)) {
+      case "SUCCESS":
         return "SUCCESS";
-      }
+      default:
+        return "UNKNOWN";
     }
-
-    return "UNKNOWN";
   }
 
   async listPullRequests(): Promise<PullRequest[]> {
-    await this.checkGhInstalled();
-    await this.checkIsGitHubRepo();
-    const output = await this.exec("gh", [
-      "pr",
-      "list",
-      "--json",
-      "number,title,author,headRefName,baseRefName,updatedAt,url,statusCheckRollup,mergeable",
-      "--limit",
-      "100",
-    ]);
-    const prs = JSON.parse(output);
-    return prs
-      .map((pr: any) => ({
-        ...pr,
-        author: pr.author.login,
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    const query = `
+      query($owner: String!, $repo: String!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequests(first: 100, states: OPEN, orderBy: {field: UPDATED_AT, direction: DESC}) {
+            nodes {
+              number
+              title
+              author {
+                login
+              }
+              headRefName
+              baseRefName
+              updatedAt
+              url
+              mergeable
+              statusCheckRollup {
+                state
+              }
+              headRepository {
+                url
+                owner {
+                  login
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+
+    try {
+      const result: any = await octokit.graphql(query, { owner, repo });
+      const prs = result.repository.pullRequests.nodes;
+
+      return prs.map((pr: any) => ({
         id: pr.number.toString(),
-        status: this.parseStatus(pr.statusCheckRollup),
+        number: pr.number,
+        title: pr.title,
+        author: pr.author.login,
+        headRefName: pr.headRefName,
+        baseRefName: pr.baseRefName,
+        updatedAt: pr.updatedAt,
+        url: pr.url,
+        status: pr.statusCheckRollup
+          ? this.mapStatus(pr.statusCheckRollup.state)
+          : "UNKNOWN",
         mergeable: pr.mergeable,
-      }))
-      .sort((a: PullRequest, b: PullRequest) => {
-        return (
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-        );
-      });
+        headRepository: pr.headRepository,
+      }));
+    } catch (error) {
+      console.error("Error listing PRs", error);
+      throw error;
+    }
   }
 
   async localBranchExists(branchName: string): Promise<boolean> {
@@ -186,63 +192,177 @@ export class GitHubAdapter implements PullRequestProvider {
   }
 
   async checkoutPullRequest(pr: PullRequest): Promise<void> {
-    await this.checkGhInstalled();
-    await this.checkIsGitHubRepo();
-
+    const { owner: currentOwner } = await this.getOwnerRepo();
     const branchName = pr.headRefName;
+
+    // 1. Check if local branch exists
     if (await this.localBranchExists(branchName)) {
+      // 2. Check for unpushed commits
       if (await this.hasUnpushedCommits(branchName)) {
         await this.exec("git", ["checkout", branchName]);
         return;
       }
     }
 
-    await this.exec("gh", ["pr", "checkout", pr.number.toString()]);
+    // 3. Determine remote
+    let remoteName = "origin";
+    let remoteUrl = "";
+
+    if (pr.headRepository && pr.headRepository.owner.login !== currentOwner) {
+      remoteName = pr.headRepository.owner.login;
+      remoteUrl = pr.headRepository.url;
+    }
+
+    // 4. Setup remote if needed
+    if (remoteName !== "origin") {
+      const remotes = await this.exec("git", ["remote"]);
+      const remoteList = remotes.split("\n").map((r) => r.trim());
+      if (!remoteList.includes(remoteName)) {
+        await this.exec("git", ["remote", "add", remoteName, remoteUrl]);
+      }
+    }
+
+    // 5. Fetch
+    await this.exec("git", ["fetch", remoteName]);
+
+    // 6. Checkout
+    if (await this.localBranchExists(branchName)) {
+      await this.exec("git", ["checkout", branchName]);
+      await this.exec("git", ["pull", remoteName, branchName]);
+    } else {
+      await this.exec("git", [
+        "checkout",
+        "-b",
+        branchName,
+        `${remoteName}/${branchName}`,
+      ]);
+    }
   }
 
   async getPullRequestDiff(pr: PullRequest): Promise<string> {
-    await this.checkGhInstalled();
-    await this.checkIsGitHubRepo();
-    return this.exec("gh", ["pr", "diff", pr.number.toString()]);
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    const { data } = await octokit.rest.pulls.get({
+      owner,
+      repo,
+      pull_number: pr.number,
+      mediaType: {
+        format: "diff",
+      },
+    });
+
+    return data as unknown as string;
   }
 
   async getPullRequestView(pr: PullRequest): Promise<string> {
-    await this.checkGhInstalled();
-    await this.checkIsGitHubRepo();
-    return this.exec("gh", [
-      "pr",
-      "view",
-      pr.number.toString(),
-      "--json",
-      "number,title,body,author,state,url,createdAt,updatedAt,headRefName,baseRefName",
-    ]);
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    const { data } = await octokit.rest.pulls.get({
+      owner,
+      repo,
+      pull_number: pr.number,
+    });
+
+    return JSON.stringify({
+      number: data.number,
+      title: data.title,
+      body: data.body,
+      author: { login: data.user?.login },
+      state: data.state,
+      url: data.html_url,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+      headRefName: data.head.ref,
+      baseRefName: data.base.ref,
+    });
   }
 
   async openPullRequestOnWeb(pr?: PullRequest): Promise<void> {
-    await this.checkGhInstalled();
-    await this.checkIsGitHubRepo();
     if (pr) {
-      await this.exec("gh", ["pr", "view", pr.number.toString(), "--web"]);
+      await vscode.env.openExternal(vscode.Uri.parse(pr.url));
     } else {
-      await this.exec("gh", ["pr", "view", "--web"]);
+      const { owner, repo } = await this.getOwnerRepo();
+      const url = `https://github.com/${owner}/${repo}/pulls`;
+      await vscode.env.openExternal(vscode.Uri.parse(url));
     }
   }
 
   async getCurrentPullRequest(): Promise<PullRequest | undefined> {
+    const branch = await this.getCurrentBranch();
+    if (!branch) {
+      return undefined;
+    }
+
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    const query = `
+      query($owner: String!, $repo: String!, $headName: String!) {
+        repository(owner: $owner, name: $repo) {
+          pullRequests(headRefName: $headName, first: 1, states: OPEN) {
+            nodes {
+              number
+              title
+              author {
+                login
+              }
+              headRefName
+              baseRefName
+              updatedAt
+              url
+              mergeable
+              statusCheckRollup {
+                state
+              }
+              headRepository {
+                 url
+                 owner {
+                   login
+                 }
+              }
+            }
+          }
+        }
+      }
+    `;
+
     try {
-      await this.checkGhInstalled();
-      await this.checkIsGitHubRepo();
-      const output = await this.exec("gh", [
-        "pr",
-        "view",
-        "--json",
-        "number,title,author,headRefName,baseRefName,updatedAt,url",
-      ]);
-      const pr = JSON.parse(output);
+      const result: any = await octokit.graphql(query, {
+        owner,
+        repo,
+        headName: branch,
+      });
+      const nodes = result.repository.pullRequests.nodes;
+      if (nodes.length === 0) {
+        return undefined;
+      }
+      const pr = nodes[0];
+
       return {
-        ...pr,
-        author: pr.author.login,
         id: pr.number.toString(),
+        number: pr.number,
+        title: pr.title,
+        author: pr.author.login,
+        headRefName: pr.headRefName,
+        baseRefName: pr.baseRefName,
+        updatedAt: pr.updatedAt,
+        url: pr.url,
+        status: pr.statusCheckRollup
+          ? this.mapStatus(pr.statusCheckRollup.state)
+          : "UNKNOWN",
+        mergeable: pr.mergeable,
+        headRepository: pr.headRepository,
       };
     } catch (error) {
       return undefined;

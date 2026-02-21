@@ -9,6 +9,7 @@ export interface PullRequest {
   url: string;
   status?: string;
   mergeable?: string;
+  headRepository?: { url: string; owner: { login: string } };
 }
 
 export interface PullRequestProvider {
