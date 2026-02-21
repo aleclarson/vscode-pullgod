@@ -19,6 +19,7 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
   - Integrates with the official "GitHub Pull Requests" extension by focusing its view after checkout.
 - **Copy PR Summary**: Generate and copy a Markdown summary of the PR (including the diff) to your clipboard—perfect for AI-assisted coding or quick reviews.
 - **Clear Information**: Shows when each PR was last updated using relative time (e.g., "2 hours ago") and emphasizes PR numbers for easy identification.
+- **Priority Management**: Easily mark pull requests as low priority using a multi-select interface.
 
 ## Prerequisites
 
@@ -34,6 +35,7 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
   - Selecting a PR will pull and check out the branch locally.
   - Includes an "Open changes" option at the top to quickly view the diff.
 - `Pullgod: Copy PR Summary to Clipboard`: Fetches the current PR's metadata and diff, formatting it as Markdown and copying it to the clipboard.
+- `Pullgod: Update PR Priorities`: Batch update 'priority:low' labels on pull requests using a multi-select interface.
 - `Pullgod: Open PR in Browser`: Opens the current PR on GitHub.
 
 ## Local Development

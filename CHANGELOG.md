@@ -4,6 +4,12 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.7.0] - 2026-02-21
+
+### Added
+
+- `Pullgod: Update PR Priorities` command to batch manage `priority:low` labels on pull requests.
+
 ## [1.6.0] - 2026-02-20
 
 ### Added
