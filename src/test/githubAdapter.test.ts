@@ -597,4 +597,23 @@ suite("GitHubAdapter Unit Test Suite", () => {
 
     assert.ok(!executor.calls.includes("git pull"), "Should NOT have pulled");
   });
+
+  test("getBranchBehindCounts should parse behind counts correctly", async () => {
+    executor.setResponse(
+      "git",
+      [
+        "for-each-ref",
+        "--format=%(refname:short)|%(upstream:track)",
+        "refs/heads",
+      ],
+      "feature|[behind 1]\nmain|[ahead 2]\nother|[ahead 1, behind 3]\nclean|\nunknown|[gone]",
+    );
+
+    const counts = await adapter.getBranchBehindCounts();
+
+    assert.strictEqual(counts["feature"], 1);
+    assert.strictEqual(counts["main"], undefined); // not behind
+    assert.strictEqual(counts["other"], 3);
+    assert.strictEqual(counts["clean"], undefined);
+  });
 });

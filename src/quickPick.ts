@@ -8,7 +8,10 @@ export interface QuickPickItemProps {
   pr: PullRequest;
 }
 
-export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
+export function createQuickPickItem(
+  pr: PullRequest,
+  commitsBehind?: number,
+): QuickPickItemProps {
   let icon = "";
   if (pr.mergeable === "CONFLICTING") {
     icon = "$(warning) ";
@@ -26,9 +29,14 @@ export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
     }
   }
 
+  let description = timeAgo(pr.updatedAt);
+  if (commitsBehind && commitsBehind > 0) {
+    description = `$(arrow-down) ${commitsBehind} behind • ${description}`;
+  }
+
   return {
     label: `${icon}${pr.title}`,
-    description: timeAgo(pr.updatedAt),
+    description,
     detail: `(#${pr.number}) By ${pr.author} → "${pr.baseRefName}" branch`,
     pr: pr,
   };

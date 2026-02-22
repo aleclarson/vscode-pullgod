@@ -129,6 +129,7 @@ export function activate(context: vscode.ExtensionContext) {
         prs: PullRequest[],
         currentPr?: PullRequest,
         currentBranch?: string,
+        behindCounts?: Record<string, number>,
       ) => {
         fetchedPRs = prs;
         prs.sort(
@@ -199,7 +200,8 @@ export function activate(context: vscode.ExtensionContext) {
 
         const addPRItem = (pr: PullRequest) => {
           const key = `pr-${pr.number}`;
-          const props = createQuickPickItem(pr);
+          const behindCount = behindCounts?.[pr.headRefName];
+          const props = createQuickPickItem(pr, behindCount);
           let item = itemsMap.get(key);
           if (item) {
             item.label = props.label;
@@ -256,15 +258,16 @@ export function activate(context: vscode.ExtensionContext) {
 
       const fetchPRs = async () => {
         try {
-          const [prs, currentPr, branch] = await Promise.all([
+          const [prs, currentPr, branch, behindCounts] = await Promise.all([
             provider.listPullRequests(),
             provider.getCurrentPullRequest(),
             branchPromise,
+            provider.getBranchBehindCounts(),
           ]);
           cache.set("github", prs);
 
           if (!isDisposed) {
-            updateQuickPickItems(prs, currentPr, branch);
+            updateQuickPickItems(prs, currentPr, branch, behindCounts);
           }
         } catch (error) {
           if (!isDisposed) {
