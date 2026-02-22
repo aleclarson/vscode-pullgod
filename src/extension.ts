@@ -331,21 +331,27 @@ export function activate(context: vscode.ExtensionContext) {
               );
               if (match) {
                 const [, owner, repo] = match;
-                const uri = vscode.Uri.from({
-                  scheme: vscode.env.uriScheme,
-                  authority: "GitHub.vscode-pull-request-github",
-                  path: "/open-pull-request-webview",
-                  query: JSON.stringify({
-                    owner,
-                    repo,
-                    pullRequestNumber: selected.pr.number,
-                  }),
+
+                const originalGroup = vscode.window.tabGroups.activeTabGroup;
+                await vscode.commands.executeCommand(
+                  "workbench.action.focusBelowGroup",
+                );
+
+                if (vscode.window.tabGroups.activeTabGroup === originalGroup) {
+                  await vscode.commands.executeCommand(
+                    "workbench.action.splitEditorDown",
+                  );
+                }
+
+                await vscode.commands.executeCommand("pr.openDescription", {
+                  owner,
+                  repo,
+                  number: selected.pr.number,
                 });
-                await vscode.env.openExternal(uri);
               }
             } catch (error) {
               outputChannel.appendLine(
-                `Failed to open pull request description via URI: ${error}`,
+                `Failed to open pull request description: ${error}`,
               );
             }
 
