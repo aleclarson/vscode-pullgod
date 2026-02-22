@@ -9,6 +9,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 
 - Periodically fetch and update the current branch if clean and safe.
+- `Pullgod: Update PR Priorities` command to batch manage `priority:low` labels on pull requests.
 
 ## [1.6.0] - 2026-02-20
 

@@ -481,4 +481,73 @@ export class GitHubAdapter implements PullRequestProvider {
       // Ignore all other errors to avoid disrupting user
     }
   }
+
+  async ensureLabelExists(
+    label: string,
+    color: string,
+    description: string,
+  ): Promise<void> {
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    try {
+      await octokit.rest.issues.getLabel({
+        owner,
+        repo,
+        name: label,
+      });
+    } catch (error: any) {
+      if (error.status === 404) {
+        await octokit.rest.issues.createLabel({
+          owner,
+          repo,
+          name: label,
+          color,
+          description,
+        });
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  async addLabel(pr: PullRequest, label: string): Promise<void> {
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    await octokit.rest.issues.addLabels({
+      owner,
+      repo,
+      issue_number: pr.number,
+      labels: [label],
+    });
+  }
+
+  async removeLabel(pr: PullRequest, label: string): Promise<void> {
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    try {
+      await octokit.rest.issues.removeLabel({
+        owner,
+        repo,
+        issue_number: pr.number,
+        name: label,
+      });
+    } catch (error: any) {
+      // Ignore if label doesn't exist
+      if (error.status !== 404) {
+        throw error;
+      }
+    }
+  }
 }
