@@ -209,10 +209,16 @@ export function activate(context: vscode.ExtensionContext) {
         }
 
         if (lowPriorityPRs.length > 0) {
-          newItems.push({
-            label: "View low priority PRs",
-            isViewLowPriority: true,
-          });
+          const lowPriKey = "view-low-priority";
+          let lowPriItem = itemsMap.get(lowPriKey);
+          if (!lowPriItem) {
+            lowPriItem = {
+              label: "View low priority PRs",
+              isViewLowPriority: true,
+            };
+            itemsMap.set(lowPriKey, lowPriItem);
+          }
+          newItems.push(lowPriItem);
         }
 
         quickPick.items = newItems;
