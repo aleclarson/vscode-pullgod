@@ -4,6 +4,12 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.7.1] - 2026-02-22
+
+### Fixed
+
+- Included `node_modules` in the packaged extension to fix missing runtime dependencies.
+
 ## [1.7.0] - 2026-02-21
 
 ### Added
