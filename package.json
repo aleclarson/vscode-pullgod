@@ -43,7 +43,6 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "pnpm run bundle",
     "bundle": "tsup",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",

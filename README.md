@@ -48,9 +48,13 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
    ```bash
    pnpm install
    ```
-3. Compile the extension:
+3. Bundle the extension:
    ```bash
-   pnpm run compile
+   pnpm run bundle
+   ```
+4. Pack the extension:
+   ```bash
+   pnpx @vscode/vsce pack --no-dependencies
    ```
 
 ### Use the self-built extension

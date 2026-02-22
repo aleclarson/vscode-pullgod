@@ -27,7 +27,7 @@ jobs:
           node-version: 20
           cache: "pnpm"
       - run: pnpm install
-      - run: pnpm run compile
+      - run: pnpm run bundle
       - run: npm install -g ovsx @vscode/vsce
       - run: vsce publish --no-dependencies
         env:
