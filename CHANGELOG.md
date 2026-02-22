@@ -4,6 +4,12 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.8.0] - 2026-02-22
+
+### Changed
+
+- Open pull request description in the bottom editor group when selected.
+
 ## [1.7.0] - 2026-02-21
 
 ### Added
