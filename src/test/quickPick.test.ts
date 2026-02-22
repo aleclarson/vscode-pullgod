@@ -106,4 +106,23 @@ suite("createQuickPickItem", () => {
 
     assert.strictEqual(item.label, "$(check) Clean PR");
   });
+
+  test("should append (low priority) to label if priority:low label exists", () => {
+    const pr: PullRequest = {
+      id: "5",
+      number: 102,
+      title: "Low Priority PR",
+      author: "user",
+      headRefName: "low-pri",
+      baseRefName: "main",
+      updatedAt: "2023-01-05T12:00:00Z",
+      url: "http://github.com/owner/repo/pull/102",
+      status: "SUCCESS",
+      labels: [{ name: "bug" }, { name: "priority:low" }]
+    };
+
+    const item = createQuickPickItem(pr);
+
+    assert.strictEqual(item.label, "$(check) Low Priority PR (low priority)");
+  });
 });
