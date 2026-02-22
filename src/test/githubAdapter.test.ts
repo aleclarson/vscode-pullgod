@@ -584,4 +584,27 @@ suite("GitHubAdapter Unit Test Suite", () => {
 
     assert.ok(!executor.calls.includes("git pull"), "Should NOT have pulled");
   });
+
+  test("getOwnerRepo should prioritize upstream over origin", async () => {
+    executor.setResponse(
+      "git",
+      ["remote", "-v"],
+      "origin\thttps://github.com/my-fork/repo.git (fetch)\norigin\thttps://github.com/my-fork/repo.git (push)\nupstream\thttps://github.com/original-owner/repo.git (fetch)\nupstream\thttps://github.com/original-owner/repo.git (push)",
+    );
+
+    authenticator.mockOctokit.graphql = async (
+      query: string,
+      variables?: any,
+    ) => {
+      assert.strictEqual(
+        variables.owner,
+        "original-owner",
+        "Should use upstream owner",
+      );
+      assert.strictEqual(variables.repo, "repo", "Should use upstream repo");
+      return { repository: { pullRequests: { nodes: [] } } };
+    };
+
+    await adapter.listPullRequests();
+  });
 });

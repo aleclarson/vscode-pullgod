@@ -236,6 +236,13 @@ export function activate(context: vscode.ExtensionContext) {
       // SWR implementation: Use cached data first
       const cachedPRs = cache.get("github");
       if (cachedPRs) {
+        quickPick.buttons = [
+          {
+            iconPath: new vscode.ThemeIcon("refresh"),
+            tooltip: "Refresh Pull Requests",
+          },
+        ];
+
         // Optimistically use cached PRs, waiting for fast branch check
         branchPromise.then((branch) => {
           if (!isDisposed) {
@@ -243,6 +250,14 @@ export function activate(context: vscode.ExtensionContext) {
           }
         });
       }
+
+      quickPick.onDidTriggerButton(async (button) => {
+        if (button.tooltip === "Refresh Pull Requests") {
+          quickPick.busy = true;
+          quickPick.buttons = []; // Remove button while refreshing
+          await fetchPRs();
+        }
+      });
 
       // Always revalidate
       fetchPRs();

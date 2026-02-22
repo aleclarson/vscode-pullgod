@@ -67,7 +67,26 @@ export class GitHubAdapter implements PullRequestProvider {
       const remotes = await this.exec("git", ["remote", "-v"]);
 
       const lines = remotes.split("\n");
-      // Find origin first
+
+      // Find upstream first (prioritize main repo over fork)
+      const upstreamLine = lines.find(
+        (l) =>
+          l.trim().startsWith("upstream") &&
+          l.includes("github.com") &&
+          l.includes("(fetch)"),
+      );
+      if (upstreamLine) {
+        const match = upstreamLine.match(/github\.com[:/]([^\/]+)\/([^\s]+)/);
+        if (match) {
+          let repo = match[2];
+          if (repo.endsWith(".git")) {
+            repo = repo.slice(0, -4);
+          }
+          return { owner: match[1], repo };
+        }
+      }
+
+      // Find origin second
       const originLine = lines.find(
         (l) =>
           l.trim().startsWith("origin") &&
