@@ -131,6 +131,35 @@ export function activate(context: vscode.ExtensionContext) {
         currentBranch?: string,
       ) => {
         fetchedPRs = prs;
+        prs.sort((a, b) => {
+          const aLow = a.labels?.some((l) => l.name === "priority:low");
+          const bLow = b.labels?.some((l) => l.name === "priority:low");
+
+          if (aLow && !bLow) {
+            return 1;
+          }
+          if (!aLow && bLow) {
+            return -1;
+          }
+
+          const aCheckedOut = cache.getLastCheckedOut(a.number);
+          const bCheckedOut = cache.getLastCheckedOut(b.number);
+
+          if (aCheckedOut && bCheckedOut) {
+            return bCheckedOut - aCheckedOut;
+          }
+          if (aCheckedOut) {
+            return -1;
+          }
+          if (bCheckedOut) {
+            return 1;
+          }
+
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
         const previousActive = quickPick.activeItems[0];
         const newItems: (vscode.QuickPickItem & {
           pr?: PullRequest;
@@ -294,6 +323,7 @@ export function activate(context: vscode.ExtensionContext) {
             },
             async () => {
               await provider.checkoutPullRequest(pr);
+              await cache.setLastCheckedOut(pr.number, Date.now());
             },
           );
           vscode.window.showInformationMessage(

@@ -12,6 +12,7 @@ suite("createQuickPickItem", () => {
       headRefName: "feature",
       baseRefName: "main",
       updatedAt: "2023-01-01T00:00:00Z",
+      createdAt: "2023-01-01T00:00:00Z",
       url: "http://github.com/owner/repo/pull/123",
       status: "SUCCESS",
     };
@@ -31,6 +32,7 @@ suite("createQuickPickItem", () => {
       headRefName: "feature",
       baseRefName: "main",
       updatedAt: "2023-01-01T00:00:00Z",
+      createdAt: "2023-01-01T00:00:00Z",
       url: "http://github.com/owner/repo/pull/123",
     };
 
@@ -51,6 +53,7 @@ suite("createQuickPickItem", () => {
       headRefName: "bugfix",
       baseRefName: "main",
       updatedAt: oneHourAgo.toISOString(),
+      createdAt: oneHourAgo.toISOString(),
       url: "http://github.com/owner/repo/pull/456",
       status: "FAILURE",
     };
@@ -78,6 +81,7 @@ suite("createQuickPickItem", () => {
       headRefName: "conflict",
       baseRefName: "main",
       updatedAt: "2023-01-03T12:00:00Z",
+      createdAt: "2023-01-03T12:00:00Z",
       url: "http://github.com/owner/repo/pull/789",
       status: "SUCCESS",
       mergeable: "CONFLICTING",
@@ -97,6 +101,7 @@ suite("createQuickPickItem", () => {
       headRefName: "clean",
       baseRefName: "main",
       updatedAt: "2023-01-04T12:00:00Z",
+      createdAt: "2023-01-04T12:00:00Z",
       url: "http://github.com/owner/repo/pull/101",
       status: "SUCCESS",
       mergeable: "MERGEABLE",

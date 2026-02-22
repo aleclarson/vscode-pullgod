@@ -3,7 +3,7 @@ import * as path from "path";
 import { PullRequest } from "./adapters/types";
 
 export class PRCache {
-  private cache: Map<string, PullRequest[]> = new Map();
+  private cache: Map<string, any> = new Map();
   private storagePath: string;
 
   constructor(storagePath: string) {
@@ -21,9 +21,7 @@ export class PRCache {
         const data = fs.readFileSync(filePath, "utf-8");
         const json = JSON.parse(data);
         for (const key in json) {
-          if (Array.isArray(json[key])) {
-            this.cache.set(key, json[key]);
-          }
+          this.cache.set(key, json[key]);
         }
       } catch (error) {
         console.error(`Failed to load cache from ${filePath}:`, error);
@@ -40,10 +38,22 @@ export class PRCache {
     await this.save();
   }
 
+  async setLastCheckedOut(prNumber: number, timestamp: number): Promise<void> {
+    const checkoutTimes = this.cache.get("checkoutTimes") || {};
+    checkoutTimes[prNumber] = timestamp;
+    this.cache.set("checkoutTimes", checkoutTimes);
+    await this.save();
+  }
+
+  getLastCheckedOut(prNumber: number): number | undefined {
+    const checkoutTimes = this.cache.get("checkoutTimes");
+    return checkoutTimes ? checkoutTimes[prNumber] : undefined;
+  }
+
   private save(): Promise<void> {
     return new Promise((resolve, reject) => {
       const filePath = path.join(this.storagePath, "cache.json");
-      const obj: Record<string, PullRequest[]> = {};
+      const obj: Record<string, any> = {};
       this.cache.forEach((value, key) => {
         obj[key] = value;
       });

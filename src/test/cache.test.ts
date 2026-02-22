@@ -26,6 +26,7 @@ suite("PRCache Test Suite", () => {
       headRefName: "feature",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://example.com",
     };
 
@@ -48,6 +49,7 @@ suite("PRCache Test Suite", () => {
       headRefName: "feature",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://example.com",
     };
 

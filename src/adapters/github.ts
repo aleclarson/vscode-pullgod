@@ -12,6 +12,7 @@ interface GitHubPullRequestNode {
   headRefName: string;
   baseRefName: string;
   updatedAt: string;
+  createdAt: string;
   url: string;
   mergeable: string;
   statusCheckRollup?: {
@@ -149,6 +150,7 @@ export class GitHubAdapter implements PullRequestProvider {
               headRefName
               baseRefName
               updatedAt
+              createdAt
               url
               mergeable
               statusCheckRollup {
@@ -188,6 +190,7 @@ export class GitHubAdapter implements PullRequestProvider {
             headRefName: pr.headRefName,
             baseRefName: pr.baseRefName,
             updatedAt: pr.updatedAt,
+            createdAt: pr.createdAt,
             url: pr.url,
             status: pr.statusCheckRollup
               ? this.mapStatus(pr.statusCheckRollup.state)
@@ -381,6 +384,7 @@ export class GitHubAdapter implements PullRequestProvider {
               headRefName
               baseRefName
               updatedAt
+              createdAt
               url
               mergeable
               statusCheckRollup {
@@ -418,6 +422,7 @@ export class GitHubAdapter implements PullRequestProvider {
         headRefName: pr.headRefName,
         baseRefName: pr.baseRefName,
         updatedAt: pr.updatedAt,
+        createdAt: pr.createdAt,
         url: pr.url,
         status: pr.statusCheckRollup
           ? this.mapStatus(pr.statusCheckRollup.state)
