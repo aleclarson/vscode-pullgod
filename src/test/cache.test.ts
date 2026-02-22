@@ -37,7 +37,7 @@ suite("PRCache Test Suite", () => {
 
     const content = fs.readFileSync(cacheFile, "utf-8");
     const json = JSON.parse(content);
-    assert.strictEqual(json["test"][0].title, "Test PR");
+    assert.strictEqual(json.pullRequests["test"][0].title, "Test PR");
   });
 
   test("should load cached value on init", () => {
@@ -55,7 +55,11 @@ suite("PRCache Test Suite", () => {
 
     // Create initial cache file
     const cacheFile = path.join(tempDir, "cache.json");
-    fs.writeFileSync(cacheFile, JSON.stringify({ test: [pr] }));
+    const initialData = {
+      pullRequests: { test: [pr] },
+      checkoutTimes: {},
+    };
+    fs.writeFileSync(cacheFile, JSON.stringify(initialData));
 
     const cache = new PRCache(tempDir);
     const cached = cache.get("test");

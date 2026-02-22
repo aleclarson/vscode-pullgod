@@ -2,8 +2,16 @@ import * as fs from "fs";
 import * as path from "path";
 import { PullRequest } from "./adapters/types";
 
+interface CacheData {
+  pullRequests: Map<string, PullRequest[]>;
+  checkoutTimes: Record<string, number>;
+}
+
 export class PRCache {
-  private cache: Map<string, any> = new Map();
+  private cache: CacheData = {
+    pullRequests: new Map(),
+    checkoutTimes: {},
+  };
   private storagePath: string;
 
   constructor(storagePath: string) {
@@ -20,8 +28,13 @@ export class PRCache {
       try {
         const data = fs.readFileSync(filePath, "utf-8");
         const json = JSON.parse(data);
-        for (const key in json) {
-          this.cache.set(key, json[key]);
+        if (json.pullRequests) {
+          for (const key in json.pullRequests) {
+            this.cache.pullRequests.set(key, json.pullRequests[key]);
+          }
+        }
+        if (json.checkoutTimes) {
+          this.cache.checkoutTimes = json.checkoutTimes;
         }
       } catch (error) {
         console.error(`Failed to load cache from ${filePath}:`, error);
@@ -30,32 +43,33 @@ export class PRCache {
   }
 
   get(key: string): PullRequest[] | undefined {
-    return this.cache.get(key);
+    return this.cache.pullRequests.get(key);
   }
 
   async set(key: string, value: PullRequest[]): Promise<void> {
-    this.cache.set(key, value);
+    this.cache.pullRequests.set(key, value);
     await this.save();
   }
 
   async setLastCheckedOut(prNumber: number, timestamp: number): Promise<void> {
-    const checkoutTimes = this.cache.get("checkoutTimes") || {};
-    checkoutTimes[prNumber] = timestamp;
-    this.cache.set("checkoutTimes", checkoutTimes);
+    this.cache.checkoutTimes[prNumber] = timestamp;
     await this.save();
   }
 
   getLastCheckedOut(prNumber: number): number | undefined {
-    const checkoutTimes = this.cache.get("checkoutTimes");
-    return checkoutTimes ? checkoutTimes[prNumber] : undefined;
+    return this.cache.checkoutTimes[prNumber];
   }
 
   private save(): Promise<void> {
     return new Promise((resolve, reject) => {
       const filePath = path.join(this.storagePath, "cache.json");
-      const obj: Record<string, any> = {};
-      this.cache.forEach((value, key) => {
-        obj[key] = value;
+      const obj: any = {
+        pullRequests: {},
+        checkoutTimes: this.cache.checkoutTimes,
+      };
+
+      this.cache.pullRequests.forEach((value, key) => {
+        obj.pullRequests[key] = value;
       });
 
       fs.writeFile(filePath, JSON.stringify(obj), (err) => {
