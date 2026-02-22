@@ -107,7 +107,7 @@ suite("createQuickPickItem", () => {
     assert.strictEqual(item.label, "$(check) Clean PR");
   });
 
-  test("should append (low priority) to label if priority:low label exists", () => {
+  test("should NOT append (low priority) to label even if priority:low label exists", () => {
     const pr: PullRequest = {
       id: "5",
       number: 102,
@@ -123,6 +123,6 @@ suite("createQuickPickItem", () => {
 
     const item = createQuickPickItem(pr);
 
-    assert.strictEqual(item.label, "$(check) Low Priority PR (low priority)");
+    assert.strictEqual(item.label, "$(check) Low Priority PR");
   });
 });

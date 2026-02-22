@@ -26,13 +26,8 @@ export function createQuickPickItem(pr: PullRequest): QuickPickItemProps {
     }
   }
 
-  let label = `${icon}${pr.title}`;
-  if (pr.labels?.some((l) => l.name === "priority:low")) {
-    label += " (low priority)";
-  }
-
   return {
-    label,
+    label: `${icon}${pr.title}`,
     description: timeAgo(pr.updatedAt),
     detail: `(#${pr.number}) By ${pr.author} → "${pr.baseRefName}" branch`,
     pr: pr,

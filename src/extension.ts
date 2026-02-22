@@ -169,7 +169,19 @@ export function activate(context: vscode.ExtensionContext) {
         }
         newItems.push(currentItem);
 
+        // Separate PRs into regular and low priority
+        const regularPRs: PullRequest[] = [];
+        const lowPriorityPRs: PullRequest[] = [];
+
         for (const pr of prs) {
+          if (pr.labels?.some((l) => l.name === "priority:low")) {
+            lowPriorityPRs.push(pr);
+          } else {
+            regularPRs.push(pr);
+          }
+        }
+
+        const addPRItem = (pr: PullRequest) => {
           const key = `pr-${pr.number}`;
           const props = createQuickPickItem(pr);
           let item = itemsMap.get(key);
@@ -183,6 +195,20 @@ export function activate(context: vscode.ExtensionContext) {
             itemsMap.set(key, item);
           }
           newItems.push(item);
+        };
+
+        for (const pr of regularPRs) {
+          addPRItem(pr);
+        }
+
+        if (lowPriorityPRs.length > 0) {
+          newItems.push({
+            label: "Low Priority",
+            kind: vscode.QuickPickItemKind.Separator,
+          });
+          for (const pr of lowPriorityPRs) {
+            addPRItem(pr);
+          }
         }
 
         quickPick.items = newItems;
@@ -250,6 +276,10 @@ export function activate(context: vscode.ExtensionContext) {
       quickPick.onDidAccept(async () => {
         const selected = quickPick.selectedItems[0];
         if (selected) {
+          if (selected.kind === vscode.QuickPickItemKind.Separator) {
+            return;
+          }
+
           quickPick.hide();
 
           if (selected.isCurrentPrOption) {
@@ -286,7 +316,7 @@ export function activate(context: vscode.ExtensionContext) {
               >();
               prSelection.items = quickPick.items.filter(
                 (i): i is vscode.QuickPickItem & { pr: PullRequest } =>
-                  !i.isCurrentPrOption && !!i.pr,
+                  !i.isCurrentPrOption && !!i.pr && i.kind !== vscode.QuickPickItemKind.Separator,
               );
               prSelection.placeholder = "Select a PR to view changes";
               prSelection.show();

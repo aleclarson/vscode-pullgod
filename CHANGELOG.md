@@ -8,7 +8,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
-- Show "(low priority)" suffix in the Quick Pick list for PRs with the `priority:low` label.
+- Group PRs with `priority:low` label under a "Low Priority" section in the Quick Pick list.
 
 ### Fixed
 
