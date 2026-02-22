@@ -8,7 +8,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 
-- Group PRs with `priority:low` label under a "Low Priority" section in the Quick Pick list.
+- Hide PRs with `priority:low` label by default and provide a "View low priority PRs" option in the Quick Pick list.
 
 ### Fixed
 

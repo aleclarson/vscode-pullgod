@@ -103,6 +103,7 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.QuickPickItem & {
           pr?: PullRequest;
           isCurrentPrOption?: boolean;
+          isViewLowPriority?: boolean;
         }
       >();
       let isDisposed = false;
@@ -117,18 +118,24 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.QuickPickItem & {
           pr?: PullRequest;
           isCurrentPrOption?: boolean;
+          isViewLowPriority?: boolean;
         }
       >();
+
+      // Store fetched PRs to be used in "View low priority PRs" flow
+      let fetchedPRs: PullRequest[] = [];
 
       const updateQuickPickItems = (
         prs: PullRequest[],
         currentPr?: PullRequest,
         currentBranch?: string,
       ) => {
+        fetchedPRs = prs;
         const previousActive = quickPick.activeItems[0];
         const newItems: (vscode.QuickPickItem & {
           pr?: PullRequest;
           isCurrentPrOption?: boolean;
+          isViewLowPriority?: boolean;
         })[] = [];
 
         let activePR = currentPr;
@@ -203,12 +210,9 @@ export function activate(context: vscode.ExtensionContext) {
 
         if (lowPriorityPRs.length > 0) {
           newItems.push({
-            label: "Low Priority",
-            kind: vscode.QuickPickItemKind.Separator,
+            label: "View low priority PRs",
+            isViewLowPriority: true,
           });
-          for (const pr of lowPriorityPRs) {
-            addPRItem(pr);
-          }
         }
 
         quickPick.items = newItems;
@@ -273,6 +277,87 @@ export function activate(context: vscode.ExtensionContext) {
       // Always revalidate
       fetchPRs();
 
+      // Extracted helper to handle PR selection actions (checkout, open changes, etc)
+      const handlePRSelection = async (pr: PullRequest) => {
+        try {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: `Checking out PR #${pr.number}...`,
+              cancellable: false,
+            },
+            async () => {
+              await provider.checkoutPullRequest(pr);
+            },
+          );
+          vscode.window.showInformationMessage(
+            `Checked out PR #${pr.number}`,
+          );
+
+          try {
+            const match = pr.url.match(
+              /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
+            );
+            if (match) {
+              const [, owner, repo] = match;
+              const uri = vscode.Uri.from({
+                scheme: vscode.env.uriScheme,
+                authority: "GitHub.vscode-pull-request-github",
+                path: "/open-pull-request-webview",
+                query: JSON.stringify({
+                  owner,
+                  repo,
+                  pullRequestNumber: pr.number,
+                }),
+              });
+              await vscode.env.openExternal(uri);
+            }
+          } catch (error) {
+            outputChannel.appendLine(
+              `Failed to open pull request description via URI: ${error}`,
+            );
+          }
+
+          try {
+            await vscode.commands.executeCommand(
+              "github:activePullRequest.focus",
+            );
+          } catch (error) {
+            outputChannel.appendLine(
+              `Failed to focus GitHub active pull request view: ${error}`,
+            );
+          }
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Error checking out pull request: ${error}`,
+          );
+        }
+      };
+
+      const openChangesForPr = async (pr: PullRequest) => {
+        try {
+          const match = pr.url.match(
+            /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
+          );
+          if (match) {
+            const [, owner, repo] = match;
+            await vscode.commands.executeCommand("pr.openChanges", {
+              owner,
+              repo,
+              number: pr.number,
+            });
+          } else {
+            vscode.window.showErrorMessage(
+              "Could not parse repository info from PR URL",
+            );
+          }
+        } catch (error) {
+          vscode.window.showErrorMessage(
+            `Error opening changes for current PR: ${error}`,
+          );
+        }
+      };
+
       quickPick.onDidAccept(async () => {
         const selected = quickPick.selectedItems[0];
         if (selected) {
@@ -280,33 +365,40 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
+          if (selected.isViewLowPriority) {
+            // Open a new Quick Pick for Low Priority PRs
+            const lowPriQuickPick = vscode.window.createQuickPick<
+              vscode.QuickPickItem & { pr: PullRequest }
+            >();
+            lowPriQuickPick.placeholder = "Low Priority Pull Requests";
+
+            const lowPriorityPRs = fetchedPRs.filter(pr =>
+              pr.labels?.some((l) => l.name === "priority:low")
+            );
+
+            lowPriQuickPick.items = lowPriorityPRs.map(pr => {
+                const props = createQuickPickItem(pr);
+                return { ...props, pr };
+            });
+
+            lowPriQuickPick.show();
+
+            lowPriQuickPick.onDidAccept(async () => {
+                const lpSelected = lowPriQuickPick.selectedItems[0];
+                if (lpSelected) {
+                    lowPriQuickPick.hide();
+                    quickPick.hide(); // Close the main picker too
+                    await handlePRSelection(lpSelected.pr);
+                }
+            });
+
+            lowPriQuickPick.onDidHide(() => lowPriQuickPick.dispose());
+            return;
+          }
+
           quickPick.hide();
 
           if (selected.isCurrentPrOption) {
-            const openChangesForPr = async (pr: PullRequest) => {
-              try {
-                const match = pr.url.match(
-                  /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
-                );
-                if (match) {
-                  const [, owner, repo] = match;
-                  await vscode.commands.executeCommand("pr.openChanges", {
-                    owner,
-                    repo,
-                    number: pr.number,
-                  });
-                } else {
-                  vscode.window.showErrorMessage(
-                    "Could not parse repository info from PR URL",
-                  );
-                }
-              } catch (error) {
-                vscode.window.showErrorMessage(
-                  `Error opening changes for current PR: ${error}`,
-                );
-              }
-            };
-
             if (selected.pr) {
               await openChangesForPr(selected.pr);
             } else {
@@ -316,7 +408,7 @@ export function activate(context: vscode.ExtensionContext) {
               >();
               prSelection.items = quickPick.items.filter(
                 (i): i is vscode.QuickPickItem & { pr: PullRequest } =>
-                  !i.isCurrentPrOption && !!i.pr && i.kind !== vscode.QuickPickItemKind.Separator,
+                  !i.isCurrentPrOption && !!i.pr && i.kind !== vscode.QuickPickItemKind.Separator && !i.isViewLowPriority,
               );
               prSelection.placeholder = "Select a PR to view changes";
               prSelection.show();
@@ -338,61 +430,7 @@ export function activate(context: vscode.ExtensionContext) {
             return;
           }
 
-          try {
-            await vscode.window.withProgress(
-              {
-                location: vscode.ProgressLocation.Notification,
-                title: `Checking out PR #${selected.pr.number}...`,
-                cancellable: false,
-              },
-              async () => {
-                if (selected.pr) {
-                  await provider.checkoutPullRequest(selected.pr);
-                }
-              },
-            );
-            vscode.window.showInformationMessage(
-              `Checked out PR #${selected.pr.number}`,
-            );
-
-            try {
-              const match = selected.pr.url.match(
-                /github\.com\/([^\/]+)\/([^\/]+)\/pull\/\d+/,
-              );
-              if (match) {
-                const [, owner, repo] = match;
-                const uri = vscode.Uri.from({
-                  scheme: vscode.env.uriScheme,
-                  authority: "GitHub.vscode-pull-request-github",
-                  path: "/open-pull-request-webview",
-                  query: JSON.stringify({
-                    owner,
-                    repo,
-                    pullRequestNumber: selected.pr.number,
-                  }),
-                });
-                await vscode.env.openExternal(uri);
-              }
-            } catch (error) {
-              outputChannel.appendLine(
-                `Failed to open pull request description via URI: ${error}`,
-              );
-            }
-
-            try {
-              await vscode.commands.executeCommand(
-                "github:activePullRequest.focus",
-              );
-            } catch (error) {
-              outputChannel.appendLine(
-                `Failed to focus GitHub active pull request view: ${error}`,
-              );
-            }
-          } catch (error) {
-            vscode.window.showErrorMessage(
-              `Error checking out pull request: ${error}`,
-            );
-          }
+          await handlePRSelection(selected.pr);
         }
       });
 
