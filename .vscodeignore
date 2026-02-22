@@ -8,6 +8,7 @@ src/**
 pnpm-lock.yaml
 .github/**
 .git/**
+node_modules/**
 *.vsix
 **/.DS_Store
 AGENTS.md
