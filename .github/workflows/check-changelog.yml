@@ -24,3 +24,10 @@ jobs:
         run: |
           echo "Error: CHANGELOG.md must be modified in this Pull Request."
           exit 1
+
+      - name: Fail if CHANGELOG.md contains "## [Unreleased]"
+        run: |
+          if grep -q "## \[Unreleased\]" CHANGELOG.md; then
+            echo "Error: CHANGELOG.md should not contain '## [Unreleased]'. Please replace it with a versioned header."
+            exit 1
+          fi
