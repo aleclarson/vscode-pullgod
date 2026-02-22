@@ -6,6 +6,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.7.1] - 2026-02-22
 
+### Added
+
+- Show "(low priority)" suffix in the Quick Pick list for PRs with the `priority:low` label.
+
 ### Fixed
 
 - Included `node_modules` in the packaged extension to fix missing runtime dependencies.
