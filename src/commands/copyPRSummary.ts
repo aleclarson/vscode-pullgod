@@ -26,9 +26,7 @@ export const copyPRSummary = (provider: PullRequestProvider) => async () => {
         const markdown = generatePRMarkdown(prData, diff);
 
         await vscode.env.clipboard.writeText(markdown);
-        vscode.window.showInformationMessage(
-          "PR summary copied to clipboard",
-        );
+        vscode.window.showInformationMessage("PR summary copied to clipboard");
       },
     );
   } catch (error) {

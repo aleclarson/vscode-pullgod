@@ -54,9 +54,7 @@ export const updatePriorities = (provider: PullRequestProvider) => async () => {
               const isLow = selectedPRs.has(item.pr.number);
 
               if (wasLow && !isLow) {
-                tasks.push(() =>
-                  provider.removeLabel(item.pr, "priority:low"),
-                );
+                tasks.push(() => provider.removeLabel(item.pr, "priority:low"));
               } else if (!wasLow && isLow) {
                 tasks.push(() => provider.addLabel(item.pr, "priority:low"));
               }
@@ -87,9 +85,7 @@ export const updatePriorities = (provider: PullRequestProvider) => async () => {
       );
     });
   } catch (error) {
-    vscode.window.showErrorMessage(
-      `Error fetching pull requests: ${error}`,
-    );
+    vscode.window.showErrorMessage(`Error fetching pull requests: ${error}`);
     quickPick.hide();
   }
 };
