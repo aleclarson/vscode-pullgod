@@ -11,35 +11,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check if CHANGELOG.md is modified
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            changelog:
-              - 'CHANGELOG.md'
-            source:
-              - 'src/**.ts'
-
-      - name: Fail if CHANGELOG.md is not modified
-        if: steps.changes.outputs.source == 'true' && steps.changes.outputs.changelog == 'false'
+      - name: Run changelog check script
         run: |
-          # Check if the changes are only in test files
-          # We need to fetch the PR base to compare
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD -- src/)
-
-          # Filter out test files
-          NON_TEST_CHANGES=$(echo "$CHANGED_FILES" | grep -v "\.test\.ts$" || true)
-
-          if [ -n "$NON_TEST_CHANGES" ]; then
-            echo "Error: CHANGELOG.md must be modified in this Pull Request."
-            echo "Modified source files:"
-            echo "$NON_TEST_CHANGES"
-            exit 1
-          else
-            echo "Only test files or non-source files modified. Skipping changelog check."
-          fi
+          chmod +x ./scripts/check-changelog.sh
+          ./scripts/check-changelog.sh
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
 
       - name: Fail if CHANGELOG.md contains "## [Unreleased]"
         run: |
