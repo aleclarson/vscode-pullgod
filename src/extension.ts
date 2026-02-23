@@ -5,7 +5,7 @@ import { PullRequest } from "./adapters/types";
 import { DiffContentProvider } from "./providers/diffContentProvider";
 import { createQuickPickItem } from "./quickPick";
 import { generatePRMarkdown } from "./markdown";
-import { prefer } from "./utils/prefer";
+import { preferGreaterNumber, preferLaterDate, prefer } from "./utils/prefer";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
@@ -132,16 +132,11 @@ export function activate(context: vscode.ExtensionContext) {
       ) => {
         fetchedPRs = prs;
         prs.sort(
-          prefer<PullRequest>(
+          prefer(
             (pr: PullRequest) =>
-              !pr.labels?.some((l: { name: string }) => l.name === "priority:low"),
-            (a: PullRequest, b: PullRequest) => {
-              const aT = cache.getLastCheckedOut(a.number) || 0;
-              const bT = cache.getLastCheckedOut(b.number) || 0;
-              return bT - aT;
-            },
-            (a: PullRequest, b: PullRequest) =>
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+              !pr.labels?.some((label) => label.name === "priority:low"),
+            preferGreaterNumber((pr) => cache.getLastCheckedOut(pr.number) || 0),
+            preferLaterDate((pr) => pr.createdAt),
           ),
         );
 
