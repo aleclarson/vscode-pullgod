@@ -1,6 +1,8 @@
 # Agent Instructions
 
+- Do not manually increment the `version` field in `package.json`. It is handled automatically.
 - Maintain the `CHANGELOG.md` file as changes are made.
+  - Do not mention changes to files outside the `src/` folder or test files in the changelog.
   - Ensure the version heading reflects the next logical version number (e.g., `## [1.7.2]`), rather than using "Unreleased".
   - Do not add changes to a version that already has a release date (e.g., `## [1.7.1] - 2026-02-22`).
   - When adding a new version heading, do not include a release date.

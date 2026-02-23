@@ -11,19 +11,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check if CHANGELOG.md is modified
-        uses: dorny/paths-filter@v3
-        id: changes
-        with:
-          filters: |
-            changelog:
-              - 'CHANGELOG.md'
-
-      - name: Fail if CHANGELOG.md is not modified
-        if: steps.changes.outputs.changelog == 'false'
+      - name: Run changelog check script
         run: |
-          echo "Error: CHANGELOG.md must be modified in this Pull Request."
-          exit 1
+          chmod +x ./scripts/check-changelog.sh
+          ./scripts/check-changelog.sh
+        env:
+          GITHUB_BASE_REF: ${{ github.base_ref }}
 
       - name: Fail if CHANGELOG.md contains "## [Unreleased]"
         run: |
