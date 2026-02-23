@@ -124,7 +124,7 @@ suite("createQuickPickItem", () => {
       createdAt: "2023-01-05T12:00:00Z",
       url: "http://github.com/owner/repo/pull/102",
       status: "SUCCESS",
-      labels: [{ name: "bug" }, { name: "priority:low" }]
+      labels: [{ name: "bug" }, { name: "priority:low" }],
     };
 
     const item = createQuickPickItem(pr);
@@ -141,6 +141,7 @@ suite("createQuickPickItem", () => {
       headRefName: "behind-branch",
       baseRefName: "main",
       updatedAt: "2023-01-05T12:00:00Z",
+      createdAt: "2023-01-05T12:00:00Z",
       url: "http://github.com/owner/repo/pull/202",
       status: "SUCCESS",
     };
