@@ -5,16 +5,16 @@ import { PullRequest } from "./adapters/types";
 import { DiffContentProvider } from "./providers/diffContentProvider";
 import { createQuickPickItem } from "./quickPick";
 import { generatePRMarkdown } from "./markdown";
+import { preferGreaterNumber, preferLaterDate, prefer } from "./utils/prefer";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
   const outputChannel = vscode.window.createOutputChannel("Pullgod");
   context.subscriptions.push(outputChannel);
 
-  const storagePath = context.storageUri
-    ? context.storageUri.fsPath
-    : context.globalStorageUri.fsPath;
-  const cache = new PRCache(storagePath);
+  const storagePath = context.globalStorageUri.fsPath;
+  const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+  const cache = new PRCache(storagePath, workspacePath);
   const provider = AdapterFactory.getProvider();
 
   context.subscriptions.push(
@@ -131,6 +131,15 @@ export function activate(context: vscode.ExtensionContext) {
         currentBranch?: string,
       ) => {
         fetchedPRs = prs;
+        prs.sort(
+          prefer(
+            (pr: PullRequest) =>
+              !pr.labels?.some((label) => label.name === "priority:low"),
+            preferGreaterNumber((pr) => cache.getLastCheckedOut(pr.number) || 0),
+            preferLaterDate((pr) => pr.createdAt),
+          ),
+        );
+
         const previousActive = quickPick.activeItems[0];
         const newItems: (vscode.QuickPickItem & {
           pr?: PullRequest;
@@ -294,6 +303,7 @@ export function activate(context: vscode.ExtensionContext) {
             },
             async () => {
               await provider.checkoutPullRequest(pr);
+              await cache.setLastCheckedOut(pr.number, Date.now());
             },
           );
           vscode.window.showInformationMessage(

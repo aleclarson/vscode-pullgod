@@ -4,11 +4,15 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.7.2]
+## [1.7.2] - 2026-02-22
 
 ### Added
 
 - Hide PRs with `priority:low` label by default and provide a "View low priority PRs" option in the Quick Pick list.
+
+### Changed
+
+- Updated PR sorting logic: prioritize recently checked-out PRs, then recently created ones.
 
 ## [1.7.1] - 2026-02-22
 

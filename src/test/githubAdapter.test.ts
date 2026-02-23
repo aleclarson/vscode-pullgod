@@ -112,6 +112,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       headRefName: "feature",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
     };
 
@@ -130,6 +131,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       headRefName: "feature",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
     };
 
@@ -161,6 +163,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       headRefName: "feature-branch",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
       headRepository: { url: "url", owner: { login: "user" } }, // Same owner
     };
@@ -211,6 +214,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       headRefName: "feature-branch",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://github.com/user/repo/pull/123",
       headRepository: { url: "url", owner: { login: "user" } },
     };
@@ -257,6 +261,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
       headRefName: "fork-branch",
       baseRefName: "main",
       updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
       url: "http://github.com/otheruser/repo/pull/123",
       headRepository: {
         url: "https://github.com/otheruser/repo",
@@ -323,6 +328,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature-branch",
               baseRefName: "main",
               updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
               url: "http://github.com/user/repo/pull/123",
               headRepository: { url: "url", owner: { login: "user" } },
               mergeable: "MERGEABLE",
@@ -365,6 +371,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature1",
               baseRefName: "main",
               updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
               url: "url1",
               statusCheckRollup: { state: "SUCCESS" },
               mergeable: "MERGEABLE",
@@ -376,6 +383,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature2",
               baseRefName: "main",
               updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
               url: "url2",
               statusCheckRollup: { state: "FAILURE" },
               mergeable: "MERGEABLE",
@@ -387,6 +395,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature3",
               baseRefName: "main",
               updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
               url: "url3",
               statusCheckRollup: { state: "PENDING" },
               mergeable: "MERGEABLE",
@@ -398,6 +407,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature4",
               baseRefName: "main",
               updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
               url: "url4",
               statusCheckRollup: null,
               mergeable: "CONFLICTING",
@@ -409,6 +419,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature5",
               baseRefName: "main",
               updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
               url: "url5",
               statusCheckRollup: null,
               mergeable: "UNKNOWN",
@@ -464,6 +475,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature1",
               baseRefName: "main",
               updatedAt: new Date(Date.now() + 10000).toISOString(), // Newer but low priority
+              createdAt: new Date(Date.now() + 10000).toISOString(),
               url: "url1",
               statusCheckRollup: null,
               mergeable: "MERGEABLE",
@@ -476,6 +488,7 @@ suite("GitHubAdapter Unit Test Suite", () => {
               headRefName: "feature2",
               baseRefName: "main",
               updatedAt: new Date(Date.now()).toISOString(), // Older
+              createdAt: new Date(Date.now()).toISOString(),
               url: "url2",
               statusCheckRollup: null,
               mergeable: "MERGEABLE",

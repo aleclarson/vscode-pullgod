@@ -6,6 +6,7 @@ export interface PullRequest {
   headRefName: string;
   baseRefName: string;
   updatedAt: string;
+  createdAt: string;
   url: string;
   status?: string;
   mergeable?: string;
