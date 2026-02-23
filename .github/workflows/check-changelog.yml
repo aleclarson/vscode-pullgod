@@ -17,16 +17,29 @@ jobs:
         with:
           filters: |
             changelog:
-              - CHANGELOG.md
+              - 'CHANGELOG.md'
             source:
-              - src/**/*.ts
-              - '!src/**/*.test.ts'
+              - 'src/**.ts'
 
       - name: Fail if CHANGELOG.md is not modified
         if: steps.changes.outputs.source == 'true' && steps.changes.outputs.changelog == 'false'
         run: |
-          echo "Error: CHANGELOG.md must be modified in this Pull Request."
-          exit 1
+          # Check if the changes are only in test files
+          # We need to fetch the PR base to compare
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }} HEAD -- src/)
+
+          # Filter out test files
+          NON_TEST_CHANGES=$(echo "$CHANGED_FILES" | grep -v "\.test\.ts$" || true)
+
+          if [ -n "$NON_TEST_CHANGES" ]; then
+            echo "Error: CHANGELOG.md must be modified in this Pull Request."
+            echo "Modified source files:"
+            echo "$NON_TEST_CHANGES"
+            exit 1
+          else
+            echo "Only test files or non-source files modified. Skipping changelog check."
+          fi
 
       - name: Fail if CHANGELOG.md contains "## [Unreleased]"
         run: |
