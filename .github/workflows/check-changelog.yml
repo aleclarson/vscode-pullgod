@@ -18,9 +18,11 @@ jobs:
           filters: |
             changelog:
               - 'CHANGELOG.md'
+            agents:
+              - 'AGENTS.md'
 
       - name: Fail if CHANGELOG.md is not modified
-        if: steps.changes.outputs.changelog == 'false'
+        if: steps.changes.outputs.changelog == 'false' && steps.changes.outputs.agents == 'false'
         run: |
           echo "Error: CHANGELOG.md must be modified in this Pull Request."
           exit 1
