@@ -5,6 +5,7 @@ import { PullRequest } from "./adapters/types";
 import { DiffContentProvider } from "./providers/diffContentProvider";
 import { createQuickPickItem } from "./quickPick";
 import { generatePRMarkdown } from "./markdown";
+import { prefer } from "./utils/prefer";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
