@@ -121,6 +121,7 @@ suite("createQuickPickItem", () => {
       headRefName: "low-pri",
       baseRefName: "main",
       updatedAt: "2023-01-05T12:00:00Z",
+      createdAt: "2023-01-05T12:00:00Z",
       url: "http://github.com/owner/repo/pull/102",
       status: "SUCCESS",
       labels: [{ name: "bug" }, { name: "priority:low" }]
