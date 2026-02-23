@@ -12,7 +12,9 @@ export function prefer<T>(
             return result;
           }
         } else if (pref(a)) {
-          return -1;
+          if (!pref(b)) {
+            return -1;
+          }
         } else if (pref(b)) {
           return 1;
         }
