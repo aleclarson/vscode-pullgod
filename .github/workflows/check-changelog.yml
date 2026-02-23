@@ -17,9 +17,9 @@ jobs:
         with:
           filters: |
             changelog:
-              - 'CHANGELOG.md'
+              - CHANGELOG.md
             source:
-              - 'src/**/*.ts'
+              - src/**/*.ts
               - '!src/**/*.test.ts'
 
       - name: Fail if CHANGELOG.md is not modified
