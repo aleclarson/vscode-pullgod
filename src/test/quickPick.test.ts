@@ -131,4 +131,23 @@ suite("createQuickPickItem", () => {
 
     assert.strictEqual(item.label, "$(check) Low Priority PR");
   });
+
+  test("should include commits behind in description", () => {
+    const pr: PullRequest = {
+      id: "6",
+      number: 202,
+      title: "Behind PR",
+      author: "user",
+      headRefName: "behind-branch",
+      baseRefName: "main",
+      updatedAt: "2023-01-05T12:00:00Z",
+      url: "http://github.com/owner/repo/pull/202",
+      status: "SUCCESS",
+    };
+
+    const item = createQuickPickItem(pr, 5);
+
+    assert.strictEqual(item.label, "$(check) Behind PR");
+    assert.ok(item.description.startsWith("$(arrow-down) 5 behind •"));
+  });
 });

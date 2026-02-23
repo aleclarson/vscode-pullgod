@@ -4,10 +4,11 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.7.2] - 2026-02-22
+## [1.8.0] - 2026-02-23
 
 ### Added
 
+- Display "commits behind" count with an icon in the PR Quick Pick list for locally checked out branches.
 - Hide PRs with `priority:low` label by default and provide a "View low priority PRs" option in the Quick Pick list.
 
 ### Changed

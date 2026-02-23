@@ -555,4 +555,37 @@ export class GitHubAdapter implements PullRequestProvider {
       }
     }
   }
+
+  async getBranchBehindCounts(): Promise<Record<string, number>> {
+    try {
+      const output = await this.exec("git", [
+        "for-each-ref",
+        "--format=%(refname:short)|%(upstream:track)",
+        "refs/heads",
+      ]);
+
+      const counts: Record<string, number> = {};
+      const lines = output.split("\n");
+
+      for (const line of lines) {
+        const parts = line.split("|");
+        if (parts.length !== 2) {
+          continue;
+        }
+
+        const branch = parts[0];
+        const track = parts[1];
+
+        const match = track.match(/behind (\d+)/);
+        if (match) {
+          counts[branch] = parseInt(match[1], 10);
+        }
+      }
+
+      return counts;
+    } catch (error) {
+      console.error("Error getting branch behind counts:", error);
+      return {};
+    }
+  }
 }
