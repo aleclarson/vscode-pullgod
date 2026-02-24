@@ -31,16 +31,7 @@
         "command": "pullgod.updatePriorities",
         "title": "Pullgod: Update PR Priorities"
       }
-    ],
-    "menus": {
-      "editor/title": [
-        {
-          "command": "pullgod.openInBrowser",
-          "group": "navigation",
-          "when": "resourceScheme == pullgod-pr"
-        }
-      ]
-    }
+    ]
   },
   "scripts": {
     "bundle": "tsup",

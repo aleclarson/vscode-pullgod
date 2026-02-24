@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { AdapterFactory } from "./adapters/factory";
 import { PRCache } from "./cache";
-import { DiffContentProvider } from "./providers/diffContentProvider";
 import { openInBrowser } from "./commands/openInBrowser";
 import { copyPRSummary } from "./commands/copyPRSummary";
 import { viewPullRequests } from "./commands/viewPullRequests";
@@ -16,13 +15,6 @@ export function activate(context: vscode.ExtensionContext) {
   const workspacePath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
   const cache = new PRCache(storagePath, workspacePath);
   const provider = AdapterFactory.getProvider();
-
-  context.subscriptions.push(
-    vscode.workspace.registerTextDocumentContentProvider(
-      "pullgod-pr",
-      new DiffContentProvider(provider),
-    ),
-  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand(

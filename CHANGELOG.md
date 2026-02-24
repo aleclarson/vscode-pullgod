@@ -4,7 +4,13 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.8.1]
+## [1.8.2]
+
+### Fixed
+
+- Updated `openInBrowser` command to resolve the target PR using the current branch.
+
+## [1.8.1] - 2026-02-23
 
 ### Internal
 
