@@ -6,12 +6,11 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [1.8.2]
 
-### Changed
+### Fixed
 
-- Updated `openInBrowser` command to resolve the target PR using the current branch, removing dependency on `pullgod-pr` scheme.
-- Removed `pullgod-pr` scheme and `DiffContentProvider` implementation entirely.
+- Updated `openInBrowser` command to resolve the target PR using the current branch.
 
-## [1.8.1]
+## [1.8.1] - 2026-02-23
 
 ### Internal
 
