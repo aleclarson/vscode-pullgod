@@ -445,6 +445,11 @@ export class GitHubAdapter implements PullRequestProvider {
 
   async updateCurrentBranchIfClean(): Promise<void> {
     try {
+      const pr = await this.getCurrentPullRequest();
+      if (!pr) {
+        return;
+      }
+
       const branch = await this.getCurrentBranch();
       if (!branch) {
         return;
