@@ -514,6 +514,28 @@ suite("GitHubAdapter Unit Test Suite", () => {
       "feature-branch",
     );
 
+    // Mock getCurrentPullRequest -> returns a valid PR
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [
+            {
+              number: 123,
+              title: "PR",
+              author: { login: "user" },
+              headRefName: "feature-branch",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              url: "url",
+              headRepository: { url: "url", owner: { login: "user" } },
+              statusCheckRollup: { state: "SUCCESS" },
+            },
+          ],
+        },
+      },
+    };
+
     // 2. Check status (clean)
     executor.setResponse("git", ["status", "--porcelain"], "");
 
@@ -550,6 +572,41 @@ suite("GitHubAdapter Unit Test Suite", () => {
     );
   });
 
+  test("updateCurrentBranchIfClean should return early if not a PR branch", async () => {
+    // 1. Get current branch
+    executor.setResponse(
+      "git",
+      ["rev-parse", "--abbrev-ref", "HEAD"],
+      "feature-branch",
+    );
+
+    // 2. Mock getCurrentPullRequest -> returns undefined (no PRs found)
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [],
+        },
+      },
+    };
+
+    // 3. Mock status (clean) - ensuring it would proceed if not for the PR check
+    executor.setResponse("git", ["status", "--porcelain"], "");
+
+    // 4. Mock fetch - ensuring it's available to be called
+    executor.setResponse("git", ["fetch"], "");
+
+    await adapter.updateCurrentBranchIfClean();
+
+    assert.ok(
+      !executor.calls.includes("git fetch"),
+      "Should NOT have fetched if no PR",
+    );
+    assert.ok(
+      !executor.calls.includes("git pull"),
+      "Should NOT have pulled if no PR",
+    );
+  });
+
   test("updateCurrentBranchIfClean should not pull if dirty", async () => {
     // 1. Get current branch
     executor.setResponse(
@@ -557,6 +614,28 @@ suite("GitHubAdapter Unit Test Suite", () => {
       ["rev-parse", "--abbrev-ref", "HEAD"],
       "feature-branch",
     );
+
+    // Mock getCurrentPullRequest -> returns a valid PR
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [
+            {
+              number: 123,
+              title: "PR",
+              author: { login: "user" },
+              headRefName: "feature-branch",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              url: "url",
+              headRepository: { url: "url", owner: { login: "user" } },
+              statusCheckRollup: { state: "SUCCESS" },
+            },
+          ],
+        },
+      },
+    };
 
     // 2. Check status (dirty)
     executor.setResponse("git", ["status", "--porcelain"], "M file.ts");
@@ -574,6 +653,28 @@ suite("GitHubAdapter Unit Test Suite", () => {
       ["rev-parse", "--abbrev-ref", "HEAD"],
       "feature-branch",
     );
+
+    // Mock getCurrentPullRequest -> returns a valid PR
+    authenticator.mockOctokit.graphqlResponse = {
+      repository: {
+        pullRequests: {
+          nodes: [
+            {
+              number: 123,
+              title: "PR",
+              author: { login: "user" },
+              headRefName: "feature-branch",
+              baseRefName: "main",
+              updatedAt: new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              url: "url",
+              headRepository: { url: "url", owner: { login: "user" } },
+              statusCheckRollup: { state: "SUCCESS" },
+            },
+          ],
+        },
+      },
+    };
 
     // 2. Check status (clean)
     executor.setResponse("git", ["status", "--porcelain"], "");
