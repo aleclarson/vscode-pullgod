@@ -4,6 +4,13 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.8.2]
+
+### Changed
+
+- Updated `openInBrowser` command to resolve the target PR using the current branch, removing dependency on `pullgod-pr` scheme.
+- Removed `pullgod-pr` scheme and `DiffContentProvider` implementation entirely.
+
 ## [1.8.1]
 
 ### Internal
