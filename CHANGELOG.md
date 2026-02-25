@@ -4,11 +4,12 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.8.4]
+## [1.9.0]
 
 ### Added
 
 - Periodic refresh of the pull request list for the open workspace.
+- `Pullgod: Reply to PR` command to post comments on the active pull request.
 
 ## [1.8.3] - 2026-02-23
 

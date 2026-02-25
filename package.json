@@ -30,6 +30,10 @@
       {
         "command": "pullgod.updatePriorities",
         "title": "Pullgod: Update PR Priorities"
+      },
+      {
+        "command": "pullgod.replyToPR",
+        "title": "Pullgod: Reply to PR"
       }
     ]
   },
