@@ -5,6 +5,7 @@ import { openInBrowser } from "./commands/openInBrowser";
 import { copyPRSummary } from "./commands/copyPRSummary";
 import { viewPullRequests } from "./commands/viewPullRequests";
 import { updatePriorities } from "./commands/updatePriorities";
+import { replyToPR } from "./commands/replyToPR";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
@@ -62,6 +63,10 @@ export function activate(context: vscode.ExtensionContext) {
       "pullgod.updatePriorities",
       updatePriorities(provider),
     ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pullgod.replyToPR", replyToPR(provider)),
   );
 }
 

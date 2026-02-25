@@ -79,6 +79,28 @@ class MockOctokit {
         return { data: this.restPullsGetResponse };
       },
     },
+    issues: {
+      createComment: async (params: any) => {
+        this.calls.push({ type: "rest.issues.createComment", params });
+        return { data: {} };
+      },
+      removeLabel: async (params: any) => {
+        this.calls.push({ type: "rest.issues.removeLabel", params });
+        return { data: {} };
+      },
+      addLabels: async (params: any) => {
+        this.calls.push({ type: "rest.issues.addLabels", params });
+        return { data: {} };
+      },
+      getLabel: async (params: any) => {
+        this.calls.push({ type: "rest.issues.getLabel", params });
+        return { data: {} };
+      },
+      createLabel: async (params: any) => {
+        this.calls.push({ type: "rest.issues.createLabel", params });
+        return { data: {} };
+      },
+    },
   };
 }
 
@@ -716,5 +738,29 @@ suite("GitHubAdapter Unit Test Suite", () => {
     assert.strictEqual(counts["main"], undefined); // not behind
     assert.strictEqual(counts["other"], 3);
     assert.strictEqual(counts["clean"], undefined);
+  });
+
+  test("postComment should create comment", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    const body = "This is a comment";
+    await adapter.postComment(pr, body);
+
+    const call = authenticator.mockOctokit.calls.find(
+      (c) => c.type === "rest.issues.createComment",
+    );
+    assert.ok(call, "Should have called createComment");
+    assert.strictEqual(call.params.issue_number, 123);
+    assert.strictEqual(call.params.body, body);
   });
 });
