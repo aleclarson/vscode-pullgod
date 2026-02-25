@@ -30,10 +30,20 @@ export function activate(context: vscode.ExtensionContext) {
     ),
   );
 
+  const refreshPRs = async () => {
+    try {
+      const prs = await provider.listPullRequests();
+      await cache.set("github", prs);
+    } catch (error) {
+      console.error("Failed to refresh PRs:", error);
+    }
+  };
+
   const interval = setInterval(() => {
     provider.updateCurrentBranchIfClean().catch((error) => {
       console.error("Failed to update branch:", error);
     });
+    refreshPRs();
   }, 60000); // Check every minute
 
   context.subscriptions.push({
