@@ -63,6 +63,18 @@ export const replyToPR = (provider: PullRequestProvider) => async () => {
               },
             );
             vscode.window.showInformationMessage("Comment posted successfully!");
+
+            // Attempt to close the editor
+            const editor = vscode.window.visibleTextEditors.find(
+              (e) => e.document.uri.toString() === uri.toString(),
+            );
+            if (editor) {
+              await vscode.window.showTextDocument(editor.document);
+              await vscode.commands.executeCommand(
+                "workbench.action.closeActiveEditor",
+              );
+            }
+
             await cleanup();
           } catch (error) {
             vscode.window.showErrorMessage(
