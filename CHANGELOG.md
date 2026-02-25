@@ -4,7 +4,7 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.9.0]
+## [1.9.0] - 2026-02-25
 
 ### Added
 
@@ -17,7 +17,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Only activate the pull interval when a PR branch is checked out.
 
-## [1.8.2]
+## [1.8.2] - 2026-02-23
 
 ### Fixed
 
