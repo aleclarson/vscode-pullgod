@@ -12,7 +12,9 @@ suite("PRCache Test Suite", () => {
 
   setup(() => {
     tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "pullgod-test-global-"));
-    workspaceDir = fs.mkdtempSync(path.join(os.tmpdir(), "pullgod-test-workspace-"));
+    workspaceDir = fs.mkdtempSync(
+      path.join(os.tmpdir(), "pullgod-test-workspace-"),
+    );
   });
 
   teardown(() => {
@@ -38,7 +40,11 @@ suite("PRCache Test Suite", () => {
 
     const globalDir = path.join(tempDir, "global");
     const cacheFile = path.join(globalDir, "cache.json");
-    assert.strictEqual(fs.existsSync(cacheFile), true, "Global cache file should exist");
+    assert.strictEqual(
+      fs.existsSync(cacheFile),
+      true,
+      "Global cache file should exist",
+    );
 
     const content = fs.readFileSync(cacheFile, "utf-8");
     const json = JSON.parse(content);
@@ -65,7 +71,11 @@ suite("PRCache Test Suite", () => {
     await cache.set("test", [pr]);
 
     const cacheFile = path.join(gitDir, "pullgod", "cache.json");
-    assert.strictEqual(fs.existsSync(cacheFile), true, "Cache file should exist in .git/pullgod");
+    assert.strictEqual(
+      fs.existsSync(cacheFile),
+      true,
+      "Cache file should exist in .git/pullgod",
+    );
   });
 
   test("should use hashed workspace path in global storage when .git does not exist", async () => {
@@ -84,9 +94,16 @@ suite("PRCache Test Suite", () => {
 
     await cache.set("test", [pr]);
 
-    const workspaceHash = crypto.createHash("md5").update(workspaceDir).digest("hex");
+    const workspaceHash = crypto
+      .createHash("md5")
+      .update(workspaceDir)
+      .digest("hex");
     const cacheFile = path.join(tempDir, workspaceHash, "cache.json");
-    assert.strictEqual(fs.existsSync(cacheFile), true, `Cache file should exist at ${cacheFile}`);
+    assert.strictEqual(
+      fs.existsSync(cacheFile),
+      true,
+      `Cache file should exist at ${cacheFile}`,
+    );
   });
 
   test("should load cached value on init", () => {

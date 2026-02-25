@@ -1,7 +1,11 @@
 type Fn = (...args: any[]) => any;
 
 export function prefer<T>(
-  ...prefs: (Exclude<T, Fn> | ((value: T) => boolean) | ((a: T, b: T) => number))[]
+  ...prefs: (
+    | Exclude<T, Fn>
+    | ((value: T) => boolean)
+    | ((a: T, b: T) => number)
+  )[]
 ) {
   return (a: T, b: T): number => {
     for (const pref of prefs as unknown[]) {

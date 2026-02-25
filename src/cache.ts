@@ -16,11 +16,17 @@ export class PRCache {
   private cacheFilePath: string;
 
   constructor(globalStoragePath: string, workspacePath?: string) {
-    this.cacheFilePath = this.determineCachePath(globalStoragePath, workspacePath);
+    this.cacheFilePath = this.determineCachePath(
+      globalStoragePath,
+      workspacePath,
+    );
     this.load();
   }
 
-  private determineCachePath(globalStoragePath: string, workspacePath?: string): string {
+  private determineCachePath(
+    globalStoragePath: string,
+    workspacePath?: string,
+  ): string {
     // If no workspace path, use global storage (fallback)
     if (!workspacePath) {
       const globalDir = path.join(globalStoragePath, "global");
@@ -41,7 +47,10 @@ export class PRCache {
     }
 
     // Fallback: Use hashed workspace path in global storage
-    const workspaceHash = crypto.createHash("md5").update(workspacePath).digest("hex");
+    const workspaceHash = crypto
+      .createHash("md5")
+      .update(workspacePath)
+      .digest("hex");
     const workspaceCacheDir = path.join(globalStoragePath, workspaceHash);
     if (!fs.existsSync(workspaceCacheDir)) {
       fs.mkdirSync(workspaceCacheDir, { recursive: true });
@@ -61,7 +70,10 @@ export class PRCache {
           this.cache.checkoutTimes = json.checkoutTimes;
         }
       } catch (error) {
-        console.error(`Failed to load cache from ${this.cacheFilePath}:`, error);
+        console.error(
+          `Failed to load cache from ${this.cacheFilePath}:`,
+          error,
+        );
       }
     }
   }
