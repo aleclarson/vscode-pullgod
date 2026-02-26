@@ -6,6 +6,7 @@ import { copyPRSummary } from "./commands/copyPRSummary";
 import { viewPullRequests } from "./commands/viewPullRequests";
 import { updatePriorities } from "./commands/updatePriorities";
 import { replyToPR } from "./commands/replyToPR";
+import { closePR } from "./commands/closePR";
 import { MemoryFileSystemProvider } from "./providers/memoryFileSystemProvider";
 
 export function activate(context: vscode.ExtensionContext) {
@@ -76,6 +77,10 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.commands.registerCommand("pullgod.replyToPR", replyToPR(provider)),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand("pullgod.closePR", closePR(provider)),
   );
 }
 

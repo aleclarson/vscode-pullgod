@@ -31,5 +31,6 @@ export interface PullRequestProvider {
   addLabel(pr: PullRequest, label: string): Promise<void>;
   removeLabel(pr: PullRequest, label: string): Promise<void>;
   postComment(pr: PullRequest, body: string): Promise<void>;
+  closePullRequest(pr: PullRequest): Promise<void>;
   getBranchBehindCounts(): Promise<Record<string, number>>;
 }

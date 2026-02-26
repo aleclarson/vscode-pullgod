@@ -34,6 +34,10 @@
       {
         "command": "pullgod.replyToPR",
         "title": "Pullgod: Reply to PR"
+      },
+      {
+        "command": "pullgod.closePR",
+        "title": "Pullgod: Close PR"
       }
     ]
   },
