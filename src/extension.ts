@@ -7,7 +7,7 @@ import { viewPullRequests } from "./commands/viewPullRequests";
 import { updatePriorities } from "./commands/updatePriorities";
 import { replyToPR } from "./commands/replyToPR";
 import { closePR } from "./commands/closePR";
-import { MemoryFileSystemProvider } from "./providers/memoryFileSystemProvider";
+import { ReplyViewProvider } from "./providers/replyViewProvider";
 
 export function activate(context: vscode.ExtensionContext) {
   console.log("Pullgod is activating...");
@@ -19,11 +19,15 @@ export function activate(context: vscode.ExtensionContext) {
   const cache = new PRCache(storagePath, workspacePath);
   const provider = AdapterFactory.getProvider();
 
+  const replyViewProvider = new ReplyViewProvider(
+    context.extensionUri,
+    provider,
+  );
+
   context.subscriptions.push(
-    vscode.workspace.registerFileSystemProvider(
-      "pullgod-reply",
-      new MemoryFileSystemProvider(),
-      { isCaseSensitive: true },
+    vscode.window.registerWebviewViewProvider(
+      "pullgod.replyView",
+      replyViewProvider,
     ),
   );
 
@@ -76,7 +80,10 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   context.subscriptions.push(
-    vscode.commands.registerCommand("pullgod.replyToPR", replyToPR(provider)),
+    vscode.commands.registerCommand(
+      "pullgod.replyToPR",
+      replyToPR(provider, replyViewProvider),
+    ),
   );
 
   context.subscriptions.push(
