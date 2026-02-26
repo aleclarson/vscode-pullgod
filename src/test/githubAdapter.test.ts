@@ -78,6 +78,10 @@ class MockOctokit {
         }
         return { data: this.restPullsGetResponse };
       },
+      update: async (params: any) => {
+        this.calls.push({ type: "rest.pulls.update", params });
+        return { data: {} };
+      },
     },
     issues: {
       createComment: async (params: any) => {
@@ -762,5 +766,28 @@ suite("GitHubAdapter Unit Test Suite", () => {
     assert.ok(call, "Should have called createComment");
     assert.strictEqual(call.params.issue_number, 123);
     assert.strictEqual(call.params.body, body);
+  });
+
+  test("closePullRequest should close the PR", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    await adapter.closePullRequest(pr);
+
+    const call = authenticator.mockOctokit.calls.find(
+      (c) => c.type === "rest.pulls.update",
+    );
+    assert.ok(call, "Should have called pulls.update");
+    assert.strictEqual(call.params.pull_number, 123);
+    assert.strictEqual(call.params.state, "closed");
   });
 });

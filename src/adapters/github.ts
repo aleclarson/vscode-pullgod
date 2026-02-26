@@ -576,6 +576,21 @@ export class GitHubAdapter implements PullRequestProvider {
     });
   }
 
+  async closePullRequest(pr: PullRequest): Promise<void> {
+    const { owner, repo } = await this.getOwnerRepo();
+    if (!this.authenticator) {
+      throw new Error("Authentication provider not configured.");
+    }
+    const octokit = await this.authenticator.getOctokit();
+
+    await octokit.rest.pulls.update({
+      owner,
+      repo,
+      pull_number: pr.number,
+      state: "closed",
+    });
+  }
+
   async getBranchBehindCounts(): Promise<Record<string, number>> {
     try {
       const output = await this.exec("git", [
