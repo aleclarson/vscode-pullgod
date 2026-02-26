@@ -39,6 +39,7 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
 - `Pullgod: Update PR Priorities`: Batch update 'priority:low' labels on pull requests using a multi-select interface.
 - `Pullgod: Open PR in Browser`: Opens the current PR on GitHub.
 - `Pullgod: Reply to PR`: Opens a temporary text editor to compose and post a comment on the active pull request.
+- `Pullgod: Close PR`: Closes the current pull request (requires confirmation).
 
 ## Local Development
 
