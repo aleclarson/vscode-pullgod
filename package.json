@@ -12,6 +12,9 @@
     "Other"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [
+    "onView:pullgod.replyView"
+  ],
   "contributes": {
     "commands": [
       {
