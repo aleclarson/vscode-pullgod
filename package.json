@@ -45,7 +45,7 @@
         "command": "workbench.action.closePanel",
         "key": "ctrl+w",
         "mac": "cmd+w",
-        "when": "view == pullgod.replyView && view.visible"
+        "when": "view == pullgod.replyView && view.visible && !editorFocus"
       }
     ],
     "viewsContainers": {
