@@ -22,6 +22,7 @@ export function activate(context: vscode.ExtensionContext) {
   const replyViewProvider = new ReplyViewProvider(
     context.extensionUri,
     provider,
+    context,
   );
 
   context.subscriptions.push(
