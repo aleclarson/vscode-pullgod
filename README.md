@@ -17,28 +17,28 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
   - Automatically pulls and checks out the PR branch locally.
   - Prevents pulling if the local branch has unpushed commits to avoid accidental conflicts.
   - Integrates with the official "GitHub Pull Requests" extension by focusing its view after checkout.
-- **Auto-Update**: Periodically fetches and updates the current branch if it is clean and has no unpushed commits.
+- **Auto-Update**: Periodically fetches and updates the current branch if it corresponds to an active pull request, is clean, and has no unpushed commits.
 - **Copy PR Summary**: Generate and copy a Markdown summary of the PR (including the diff) to your clipboard—perfect for AI-assisted coding or quick reviews.
 - **Clear Information**: Shows when each PR was last updated using relative time (e.g., "2 hours ago") and emphasizes PR numbers for easy identification.
 - **Priority Management**: Easily mark pull requests as low priority using a multi-select interface.
 
 ## Prerequisites
 
-- **GitHub CLI (gh)**: This extension uses the `gh` CLI for interacting with GitHub. Ensure it is installed and authenticated. [Install gh](https://cli.github.com/).
+- **GitHub Account**: This extension uses VS Code's built-in authentication to interact with GitHub. You will be prompted to sign in if you haven't already.
 - **Git**: Your workspace must be a git repository with a GitHub remote.
 
 ## Contributed Commands
 
 - `Pullgod: View Pull Requests`: Lists pull requests from the origin remote.
-  - Ordered by newest first (last updated).
+  - Ordered by last checked out, then creation date.
   - Searchable/Filterable via the Quick Pick interface.
   - CI status icons are displayed next to each PR.
   - Selecting a PR will pull and check out the branch locally.
   - Includes an "Open changes" option at the top to quickly view the diff.
 - `Pullgod: Copy PR Summary to Clipboard`: Fetches the current PR's metadata and diff, formatting it as Markdown and copying it to the clipboard.
 - `Pullgod: Update PR Priorities`: Batch update 'priority:low' labels on pull requests using a multi-select interface.
-- `Pullgod: Open PR in Browser`: Opens the current PR on GitHub.
-- `Pullgod: Reply to PR`: Opens a temporary text editor to compose and post a comment on the active pull request.
+- `Pullgod: Open PR in Browser`: Opens the current PR on GitHub (or the pull request list if no active PR is found).
+- `Pullgod: Reply to PR`: Opens a reply form in the Pullgod panel to compose and post a comment on the active pull request.
 - `Pullgod: Close PR`: Closes the current pull request (requires confirmation).
 
 ## Local Development
