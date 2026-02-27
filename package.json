@@ -40,14 +40,6 @@
         "title": "Pullgod: Close PR"
       }
     ],
-    "keybindings": [
-      {
-        "command": "workbench.action.closePanel",
-        "key": "ctrl+w",
-        "mac": "cmd+w",
-        "when": "webviewId == 'pullgod.replyView'"
-      }
-    ],
     "viewsContainers": {
       "panel": [
         {

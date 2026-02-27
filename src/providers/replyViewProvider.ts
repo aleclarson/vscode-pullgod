@@ -43,10 +43,8 @@ export class ReplyViewProvider implements vscode.WebviewViewProvider {
             if (this._view) {
               this._view.webview.postMessage({ type: "clear" });
             }
-            // Close the panel by hiding the view/focusing elsewhere if needed
-            // For now, let's just keep it open but cleared.
-            // Or we can try to close it:
-             vscode.commands.executeCommand('workbench.action.closePanel');
+            // Focus the terminal panel after successful submission
+            vscode.commands.executeCommand("workbench.action.terminal.focus");
           } catch (error) {
             vscode.window.showErrorMessage(
               `Failed to post comment: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -142,7 +140,7 @@ export class ReplyViewProvider implements vscode.WebviewViewProvider {
 			</head>
 			<body>
                 <div id="header">${initialHeader}</div>
-				<textarea id="comment-body" placeholder="Write your comment here... (Cmd+Enter to submit, Cmd+W to cancel)"></textarea>
+				<textarea id="comment-body" placeholder="Write your comment here... (Cmd+Enter to submit)"></textarea>
                 <div class="actions">
 				    <button id="submit">Comment</button>
                     <button id="cancel" style="background-color: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);">Cancel</button>
@@ -177,10 +175,6 @@ export class ReplyViewProvider implements vscode.WebviewViewProvider {
                         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
                             e.preventDefault();
                             vscode.postMessage({ type: 'submit', value: textarea.value });
-                        }
-                         if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
-                            e.preventDefault();
-                            vscode.postMessage({ type: 'cancel' });
                         }
                     });
 
