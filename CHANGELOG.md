@@ -4,6 +4,12 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.12.0]
+
+### Added
+
+- New configuration setting `pullgod.openInBrowserStrategy` to choose between opening PRs in the system browser or an IDE browser tab.
+
 ## [1.11.0]
 
 ### Added

@@ -28,3 +28,27 @@ export class VSCodeWorkspace implements Workspace {
     return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   }
 }
+
+export interface BrowserOpener {
+  open(url: string, strategy: "system" | "vscode"): Promise<void>;
+}
+
+export class VSCodeBrowserOpener implements BrowserOpener {
+  async open(url: string, strategy: "system" | "vscode"): Promise<void> {
+    if (strategy === "vscode") {
+      await vscode.commands.executeCommand("simpleBrowser.show", url);
+    } else {
+      await vscode.env.openExternal(vscode.Uri.parse(url));
+    }
+  }
+}
+
+export interface ConfigurationProvider {
+  get<T>(section: string, key: string): T | undefined;
+}
+
+export class VSCodeConfigurationProvider implements ConfigurationProvider {
+  get<T>(section: string, key: string): T | undefined {
+    return vscode.workspace.getConfiguration(section).get<T>(key);
+  }
+}
