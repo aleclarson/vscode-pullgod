@@ -39,7 +39,25 @@
         "command": "pullgod.closePR",
         "title": "Pullgod: Close PR"
       }
-    ]
+    ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "pullgod-panel",
+          "title": "Pullgod",
+          "icon": "icon.png"
+        }
+      ]
+    },
+    "views": {
+      "pullgod-panel": [
+        {
+          "id": "pullgod.replyView",
+          "name": "Reply to PR",
+          "type": "webview"
+        }
+      ]
+    }
   },
   "scripts": {
     "bundle": "tsup",

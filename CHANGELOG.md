@@ -10,6 +10,10 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - `Pullgod: Close PR` command to close the current pull request.
 
+### Changed
+
+- Reworked `Pullgod: Reply to PR` to use a dedicated VS Code panel instead of a virtual file, supporting `Cmd+Enter` to submit and `Cmd+W` to close.
+
 ## [1.10.0] - 2026-02-25
 
 ### Changed
