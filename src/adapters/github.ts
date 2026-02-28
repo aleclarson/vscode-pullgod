@@ -1,5 +1,14 @@
 import { PullRequest, PullRequestProvider } from "./types";
-import { Executor, NodeExecutor, Workspace, VSCodeWorkspace } from "./system";
+import {
+  Executor,
+  NodeExecutor,
+  Workspace,
+  VSCodeWorkspace,
+  BrowserOpener,
+  VSCodeBrowserOpener,
+  ConfigurationProvider,
+  VSCodeConfigurationProvider,
+} from "./system";
 import { Authenticator } from "./authenticator";
 import * as vscode from "vscode";
 
@@ -43,15 +52,21 @@ export class GitHubAdapter implements PullRequestProvider {
   private executor: Executor;
   private workspace: Workspace;
   private authenticator?: Authenticator;
+  private browserOpener: BrowserOpener;
+  private configurationProvider: ConfigurationProvider;
 
   constructor(
     executor: Executor = new NodeExecutor(),
     workspace: Workspace = new VSCodeWorkspace(),
     authenticator?: Authenticator,
+    browserOpener: BrowserOpener = new VSCodeBrowserOpener(),
+    configurationProvider: ConfigurationProvider = new VSCodeConfigurationProvider(),
   ) {
     this.executor = executor;
     this.workspace = workspace;
     this.authenticator = authenticator;
+    this.browserOpener = browserOpener;
+    this.configurationProvider = configurationProvider;
   }
 
   private async exec(command: string, args: string[]): Promise<string> {
@@ -350,12 +365,18 @@ export class GitHubAdapter implements PullRequestProvider {
   }
 
   async openPullRequestOnWeb(pr?: PullRequest): Promise<void> {
+    const strategy =
+      this.configurationProvider.get<"system" | "vscode">(
+        "pullgod",
+        "openInBrowserStrategy",
+      ) || "system";
+
     if (pr) {
-      await vscode.env.openExternal(vscode.Uri.parse(pr.url));
+      await this.browserOpener.open(pr.url, strategy);
     } else {
       const { owner, repo } = await this.getOwnerRepo();
       const url = `https://github.com/${owner}/${repo}/pulls`;
-      await vscode.env.openExternal(vscode.Uri.parse(url));
+      await this.browserOpener.open(url, strategy);
     }
   }
 

@@ -1,9 +1,34 @@
 import * as assert from "assert";
 import { GitHubAdapter } from "../adapters/github";
-import { Executor, Workspace } from "../adapters/system";
+import {
+  Executor,
+  Workspace,
+  BrowserOpener,
+  ConfigurationProvider,
+} from "../adapters/system";
 import { PullRequest } from "../adapters/types";
 import { Authenticator } from "../adapters/authenticator";
 import type { Octokit } from "octokit" with { "resolution-mode": "import" };
+
+class MockBrowserOpener implements BrowserOpener {
+  public calls: { url: string; strategy: "system" | "vscode" }[] = [];
+
+  async open(url: string, strategy: "system" | "vscode"): Promise<void> {
+    this.calls.push({ url, strategy });
+  }
+}
+
+class MockConfigurationProvider implements ConfigurationProvider {
+  private config: Record<string, any> = {};
+
+  set(key: string, value: any) {
+    this.config[key] = value;
+  }
+
+  get<T>(section: string, key: string): T | undefined {
+    return this.config[key] as T;
+  }
+}
 
 class MockExecutor implements Executor {
   private responses: Record<string, string> = {};
@@ -121,12 +146,85 @@ suite("GitHubAdapter Unit Test Suite", () => {
   let executor: MockExecutor;
   let workspace: MockWorkspace;
   let authenticator: MockAuthenticator;
+  let browserOpener: MockBrowserOpener;
+  let configurationProvider: MockConfigurationProvider;
 
   setup(() => {
     executor = new MockExecutor();
     workspace = new MockWorkspace();
     authenticator = new MockAuthenticator();
-    adapter = new GitHubAdapter(executor, workspace, authenticator);
+    browserOpener = new MockBrowserOpener();
+    configurationProvider = new MockConfigurationProvider();
+    adapter = new GitHubAdapter(
+      executor,
+      workspace,
+      authenticator,
+      browserOpener,
+      configurationProvider,
+    );
+  });
+
+  test("openPullRequestOnWeb should respect system strategy", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    configurationProvider.set("openInBrowserStrategy", "system");
+    await adapter.openPullRequestOnWeb(pr);
+
+    assert.strictEqual(browserOpener.calls.length, 1);
+    assert.strictEqual(browserOpener.calls[0].url, pr.url);
+    assert.strictEqual(browserOpener.calls[0].strategy, "system");
+  });
+
+  test("openPullRequestOnWeb should respect vscode strategy", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    configurationProvider.set("openInBrowserStrategy", "vscode");
+    await adapter.openPullRequestOnWeb(pr);
+
+    assert.strictEqual(browserOpener.calls.length, 1);
+    assert.strictEqual(browserOpener.calls[0].url, pr.url);
+    assert.strictEqual(browserOpener.calls[0].strategy, "vscode");
+  });
+
+  test("openPullRequestOnWeb should default to system strategy", async () => {
+    const pr: PullRequest = {
+      id: "1",
+      number: 123,
+      title: "Test PR",
+      author: "user",
+      headRefName: "feature",
+      baseRefName: "main",
+      updatedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      url: "http://github.com/user/repo/pull/123",
+    };
+
+    // No config set
+    await adapter.openPullRequestOnWeb(pr);
+
+    assert.strictEqual(browserOpener.calls.length, 1);
+    assert.strictEqual(browserOpener.calls[0].url, pr.url);
+    assert.strictEqual(browserOpener.calls[0].strategy, "system");
   });
 
   test("getPullRequestDiff should return diff output", async () => {

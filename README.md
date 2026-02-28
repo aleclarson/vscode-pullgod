@@ -41,6 +41,14 @@ Available on [Visual Studio Marketplace](https://marketplace.visualstudio.com/it
 - `Pullgod: Reply to PR`: Opens a reply form in the Pullgod panel to compose and post a comment on the active pull request.
 - `Pullgod: Close PR`: Closes the current pull request (requires confirmation).
 
+## Configuration
+
+This extension contributes the following settings:
+
+*   `pullgod.openInBrowserStrategy`: Controls how pull requests are opened in the browser.
+    *   `system` (default): Opens the PR in your default system browser.
+    *   `vscode`: Opens the PR in an IDE browser tab (Simple Browser).
+
 ## Local Development
 
 ### Build Locally

@@ -9,6 +9,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 
 - `Pullgod: Close PR` command to close the current pull request.
+- New configuration setting `pullgod.openInBrowserStrategy` to choose between opening PRs in the system browser or an IDE browser tab.
 
 ### Changed
 

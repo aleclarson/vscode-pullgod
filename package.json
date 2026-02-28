@@ -13,6 +13,24 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Pullgod",
+      "properties": {
+        "pullgod.openInBrowserStrategy": {
+          "type": "string",
+          "default": "system",
+          "enum": [
+            "system",
+            "vscode"
+          ],
+          "enumDescriptions": [
+            "Open in the system browser",
+            "Open in an IDE browser tab"
+          ],
+          "description": "Control whether to open PRs in the system browser or an IDE browser tab."
+        }
+      }
+    },
     "commands": [
       {
         "command": "pullgod.viewPullRequests",
