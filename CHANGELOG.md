@@ -4,7 +4,7 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
-## [1.11.0]
+## [1.11.0] - 2026-02-27
 
 ### Added
 
