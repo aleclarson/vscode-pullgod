@@ -8,6 +8,8 @@ export const updatePriorities = (provider: PullRequestProvider) => async () => {
   >();
   quickPick.canSelectMany = true;
   quickPick.placeholder = "Select PRs to mark as Low Priority...";
+  quickPick.matchOnDescription = true;
+  quickPick.matchOnDetail = true;
   quickPick.busy = true;
   quickPick.show();
 

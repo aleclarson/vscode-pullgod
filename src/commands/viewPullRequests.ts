@@ -21,6 +21,8 @@ export const viewPullRequests =
     >();
     let isDisposed = false;
     quickPick.placeholder = "Search Pull Requests...";
+    quickPick.matchOnDescription = true;
+    quickPick.matchOnDetail = true;
     quickPick.busy = true;
     quickPick.show();
 
@@ -301,6 +303,8 @@ export const viewPullRequests =
             vscode.QuickPickItem & { pr: PullRequest }
           >();
           lowPriQuickPick.placeholder = "Low Priority Pull Requests";
+          lowPriQuickPick.matchOnDescription = true;
+          lowPriQuickPick.matchOnDetail = true;
 
           const lowPriorityPRs = fetchedPRs.filter((pr) =>
             pr.labels?.some((l) => l.name === "priority:low"),
@@ -344,6 +348,8 @@ export const viewPullRequests =
                 !i.isViewLowPriority,
             );
             prSelection.placeholder = "Select a PR to view changes";
+            prSelection.matchOnDescription = true;
+            prSelection.matchOnDetail = true;
             prSelection.show();
 
             prSelection.onDidAccept(async () => {
