@@ -56,7 +56,14 @@ export function activate(context: vscode.ExtensionContext) {
     }
   };
 
+  let lastViewedAt = Date.now();
+  const inactivityLimit = 5 * 60 * 1000; // 5 minutes
+
   const interval = setInterval(() => {
+    if (Date.now() - lastViewedAt > inactivityLimit) {
+      return;
+    }
+
     provider.updateCurrentBranchIfClean().catch((error) => {
       console.error("Failed to update branch:", error);
     });
@@ -70,7 +77,9 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand(
       "pullgod.viewPullRequests",
-      viewPullRequests(provider, cache, outputChannel),
+      viewPullRequests(provider, cache, outputChannel, () => {
+        lastViewedAt = Date.now();
+      }),
     ),
   );
 
