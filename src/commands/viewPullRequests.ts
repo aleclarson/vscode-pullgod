@@ -9,9 +9,13 @@ export const viewPullRequests =
     provider: PullRequestProvider,
     cache: PRCache,
     outputChannel: vscode.OutputChannel,
+    onUsed?: () => void,
   ) =>
   async () => {
     console.log("Pullgod command triggered");
+    if (onUsed) {
+      onUsed();
+    }
     const quickPick = vscode.window.createQuickPick<
       vscode.QuickPickItem & {
         pr?: PullRequest;
