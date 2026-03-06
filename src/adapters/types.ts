@@ -15,7 +15,8 @@ export interface PullRequest {
 }
 
 export interface PullRequestProvider {
-  listPullRequests(): Promise<PullRequest[]>;
+  listPullRequests(ownerRepo?: { owner: string; repo: string }): Promise<PullRequest[]>;
+  getRemotes(): Promise<{ name: string; owner: string; repo: string }[]>;
   checkoutPullRequest(pr: PullRequest): Promise<void>;
   getPullRequestDiff(pr: PullRequest): Promise<string>;
   getPullRequestView(pr: PullRequest): Promise<string>;

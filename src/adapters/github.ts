@@ -145,8 +145,38 @@ export class GitHubAdapter implements PullRequestProvider {
     }
   }
 
-  async listPullRequests(): Promise<PullRequest[]> {
-    const { owner, repo } = await this.getOwnerRepo();
+  async getRemotes(): Promise<{ name: string; owner: string; repo: string }[]> {
+    try {
+      const output = await this.exec("git", ["remote", "-v"]);
+      const lines = output.split("\n");
+      const remotes: { name: string; owner: string; repo: string }[] = [];
+      const seenNames = new Set<string>();
+
+      for (const line of lines) {
+        if (line.includes("github.com") && line.includes("(fetch)")) {
+          const match = line.match(/^(\S+)\s+.*github\.com[:/]([^\/]+)\/([^\s]+)/);
+          if (match) {
+            const name = match[1];
+            if (seenNames.has(name)) {
+              continue;
+            }
+            seenNames.add(name);
+            let repo = match[3];
+            if (repo.endsWith(".git")) {
+              repo = repo.slice(0, -4);
+            }
+            remotes.push({ name, owner: match[2], repo });
+          }
+        }
+      }
+      return remotes;
+    } catch (error) {
+      return [];
+    }
+  }
+
+  async listPullRequests(ownerRepo?: { owner: string; repo: string }): Promise<PullRequest[]> {
+    const { owner, repo } = ownerRepo ?? await this.getOwnerRepo();
     if (!this.authenticator) {
       throw new Error("Authentication provider not configured.");
     }
