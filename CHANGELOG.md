@@ -128,3 +128,5 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.0.0] - 2026-02-17
 
 - Initial release
+## [1.12.0]
+- Added a button to the Pull Request quick pick to allow viewing PRs from other git remotes.
