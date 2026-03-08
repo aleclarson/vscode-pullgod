@@ -10,7 +10,7 @@ export const viewPullRequests =
     cache: PRCache,
     outputChannel: vscode.OutputChannel,
   ) =>
-  async () => {
+  async (targetRemote?: { name: string; owner: string; repo: string }) => {
     console.log("Pullgod command triggered");
     const quickPick = vscode.window.createQuickPick<
       vscode.QuickPickItem & {
@@ -20,11 +20,15 @@ export const viewPullRequests =
       }
     >();
     let isDisposed = false;
-    quickPick.placeholder = "Search Pull Requests...";
+    quickPick.placeholder = targetRemote
+      ? `Pull Requests for ${targetRemote.owner}/${targetRemote.repo} (${targetRemote.name})`
+      : "Search Pull Requests...";
     quickPick.matchOnDescription = true;
     quickPick.matchOnDetail = true;
     quickPick.busy = true;
     quickPick.show();
+
+    const currentRemote = targetRemote;
 
     const branchPromise = provider.getCurrentBranch();
 
@@ -68,39 +72,41 @@ export const viewPullRequests =
         activePR = prs.find((p) => p.headRefName === currentBranch);
       }
 
-      const currentKey = "current-option";
-      let currentItem = itemsMap.get(currentKey);
+      // Only show "Open changes" option if we are viewing the default remote
+      if (!currentRemote) {
+        const currentKey = "current-option";
+        let currentItem = itemsMap.get(currentKey);
 
-      if (activePR) {
-        if (!currentItem || !currentItem.isCurrentPrOption) {
-          currentItem = {
-            label: "$(git-pull-request) Open changes",
-            description: `(#${activePR.number}) ${activePR.title}`,
-            detail: "View the git diff for the current PR",
-            pr: activePR,
-            isCurrentPrOption: true,
-          };
-          itemsMap.set(currentKey, currentItem);
+        if (activePR) {
+          if (!currentItem || !currentItem.isCurrentPrOption) {
+            currentItem = {
+              label: "$(git-pull-request) Open changes",
+              description: `(#${activePR.number}) ${activePR.title}`,
+              detail: "View the git diff for the current PR",
+              pr: activePR,
+              isCurrentPrOption: true,
+            };
+            itemsMap.set(currentKey, currentItem);
+          } else {
+            currentItem.description = `(#${activePR.number}) ${activePR.title}`;
+            currentItem.pr = activePR;
+          }
         } else {
-          currentItem.description = `(#${activePR.number}) ${activePR.title}`;
-          currentItem.pr = activePR;
+          if (!currentItem || !currentItem.isCurrentPrOption) {
+            currentItem = {
+              label: "$(git-pull-request) Open changes",
+              description: "Select a PR to view changes",
+              detail: "View the git diff for a selected PR",
+              isCurrentPrOption: true,
+            };
+            itemsMap.set(currentKey, currentItem);
+          } else {
+            currentItem.description = "Select a PR to view changes";
+            currentItem.pr = undefined;
+          }
         }
-      } else {
-        if (!currentItem || !currentItem.isCurrentPrOption) {
-          currentItem = {
-            label: "$(git-pull-request) Open changes",
-            description: "Select a PR to view changes",
-            detail: "View the git diff for a selected PR",
-            isCurrentPrOption: true,
-          };
-          itemsMap.set(currentKey, currentItem);
-        } else {
-          currentItem.description = "Select a PR to view changes";
-          currentItem.pr = undefined;
-        }
+        newItems.push(currentItem);
       }
-      newItems.push(currentItem);
-
       // Separate PRs into regular and low priority
       const regularPRs: PullRequest[] = [];
       const lowPriorityPRs: PullRequest[] = [];
@@ -172,14 +178,22 @@ export const viewPullRequests =
     };
 
     const fetchPRs = async () => {
+      quickPick.busy = true;
       try {
         const [prs, currentPr, branch, behindCounts] = await Promise.all([
-          provider.listPullRequests(),
-          provider.getCurrentPullRequest(),
-          branchPromise,
-          provider.getBranchBehindCounts(),
+          provider.listPullRequests(
+            currentRemote
+              ? { owner: currentRemote.owner, repo: currentRemote.repo }
+              : undefined,
+          ),
+          currentRemote ? Promise.resolve(undefined) : provider.getCurrentPullRequest(),
+          currentRemote ? Promise.resolve(undefined) : branchPromise,
+          currentRemote ? Promise.resolve({}) : provider.getBranchBehindCounts(),
         ]);
-        cache.set("github", prs);
+
+        if (!currentRemote) {
+          cache.set("github", prs);
+        }
 
         if (!isDisposed) {
           updateQuickPickItems(prs, currentPr, branch, behindCounts);
@@ -196,18 +210,20 @@ export const viewPullRequests =
         }
       }
     };
-    // SWR implementation: Use cached data first
-    const cachedPRs = cache.get("github");
-    if (cachedPRs) {
-      // Optimistically use cached PRs, waiting for fast branch check
-      branchPromise.then((branch) => {
-        if (!isDisposed) {
-          updateQuickPickItems(cachedPRs, undefined, branch);
-        }
-      });
+    if (!currentRemote) {
+      // SWR implementation: Use cached data first
+      const cachedPRs = cache.get("github");
+      if (cachedPRs) {
+        // Optimistically use cached PRs, waiting for fast branch check
+        branchPromise.then((branch) => {
+          if (!isDisposed) {
+            updateQuickPickItems(cachedPRs, undefined, branch);
+          }
+        });
+      }
     }
 
-    // Always revalidate
+    // Always revalidate (or perform initial fetch if remote)
     fetchPRs();
 
     // Extracted helper to handle PR selection actions (checkout, open changes, etc)
