@@ -9,6 +9,8 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ### Added
 - Support filtering pull requests by PR number and description in QuickPicks
 - `Pullgod: View Pull Requests` automatically suspends background polling after 15 minutes of inactivity to save resources.
+- `Pullgod: View Pull Requests for Remote...` command to view PRs from any configured GitHub remote.
+- `pullgod.preferredRemote` setting to configure the default git remote (defaults to `origin`).
 
 ## [1.11.0] - 2026-02-27
 
@@ -134,6 +136,3 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.0.0] - 2026-02-17
 
 - Initial release
-## [1.12.0]
-- Added a new command "Pullgod: View Pull Requests for Remote..." to allow viewing PRs from other git remotes.
-- Added a new setting "pullgod.preferredRemote" to configure the default git remote to fetch pull requests from.
