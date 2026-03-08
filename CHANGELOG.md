@@ -8,6 +8,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ### Added
 - Support filtering pull requests by PR number and description in QuickPicks
+- `Pullgod: View Pull Requests` automatically suspends background polling after 15 minutes of inactivity to save resources.
 
 ## [1.11.0] - 2026-02-27
 
