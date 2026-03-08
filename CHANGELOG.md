@@ -134,4 +134,5 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Initial release
 ## [1.12.0]
-- Added a button to the Pull Request quick pick to allow viewing PRs from other git remotes.
+- Added a new command "Pullgod: View Pull Requests for Remote..." to allow viewing PRs from other git remotes.
+- Added a new setting "pullgod.preferredRemote" to configure the default git remote to fetch pull requests from.

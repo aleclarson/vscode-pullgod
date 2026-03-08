@@ -10,7 +10,7 @@ export const viewPullRequests =
     cache: PRCache,
     outputChannel: vscode.OutputChannel,
   ) =>
-  async () => {
+  async (targetRemote?: { name: string; owner: string; repo: string }) => {
     console.log("Pullgod command triggered");
     const quickPick = vscode.window.createQuickPick<
       vscode.QuickPickItem & {
@@ -20,19 +20,15 @@ export const viewPullRequests =
       }
     >();
     let isDisposed = false;
-    quickPick.placeholder = "Search Pull Requests...";
+    quickPick.placeholder = targetRemote
+      ? `Pull Requests for ${targetRemote.owner}/${targetRemote.repo} (${targetRemote.name})`
+      : "Search Pull Requests...";
     quickPick.matchOnDescription = true;
     quickPick.matchOnDetail = true;
-    quickPick.buttons = [
-      {
-        iconPath: new vscode.ThemeIcon("repo-clone"),
-        tooltip: "View PRs from another remote",
-      },
-    ];
     quickPick.busy = true;
     quickPick.show();
 
-    let currentRemote: { name: string; owner: string; repo: string } | undefined = undefined;
+    const currentRemote = targetRemote;
 
     const branchPromise = provider.getCurrentBranch();
 
@@ -181,23 +177,21 @@ export const viewPullRequests =
       }
     };
 
-    const fetchPRs = async (remote?: { name: string; owner: string; repo: string }) => {
+    const fetchPRs = async () => {
       quickPick.busy = true;
       try {
-        const targetRemote = remote;
         const [prs, currentPr, branch, behindCounts] = await Promise.all([
-          provider.listPullRequests(targetRemote ? { owner: targetRemote.owner, repo: targetRemote.repo } : undefined),
-          targetRemote ? Promise.resolve(undefined) : provider.getCurrentPullRequest(),
-          targetRemote ? Promise.resolve(undefined) : branchPromise,
-          targetRemote ? Promise.resolve({}) : provider.getBranchBehindCounts(),
+          provider.listPullRequests(
+            currentRemote
+              ? { owner: currentRemote.owner, repo: currentRemote.repo }
+              : undefined,
+          ),
+          currentRemote ? Promise.resolve(undefined) : provider.getCurrentPullRequest(),
+          currentRemote ? Promise.resolve(undefined) : branchPromise,
+          currentRemote ? Promise.resolve({}) : provider.getBranchBehindCounts(),
         ]);
 
-        // Discard result if remote changed during fetch
-        if (targetRemote !== currentRemote) {
-          return;
-        }
-
-        if (!targetRemote) {
+        if (!currentRemote) {
           cache.set("github", prs);
         }
 
@@ -216,18 +210,20 @@ export const viewPullRequests =
         }
       }
     };
-    // SWR implementation: Use cached data first
-    const cachedPRs = cache.get("github");
-    if (cachedPRs) {
-      // Optimistically use cached PRs, waiting for fast branch check
-      branchPromise.then((branch) => {
-        if (!isDisposed) {
-          updateQuickPickItems(cachedPRs, undefined, branch);
-        }
-      });
+    if (!currentRemote) {
+      // SWR implementation: Use cached data first
+      const cachedPRs = cache.get("github");
+      if (cachedPRs) {
+        // Optimistically use cached PRs, waiting for fast branch check
+        branchPromise.then((branch) => {
+          if (!isDisposed) {
+            updateQuickPickItems(cachedPRs, undefined, branch);
+          }
+        });
+      }
     }
 
-    // Always revalidate
+    // Always revalidate (or perform initial fetch if remote)
     fetchPRs();
 
     // Extracted helper to handle PR selection actions (checkout, open changes, etc)
@@ -309,57 +305,6 @@ export const viewPullRequests =
         );
       }
     };
-
-    quickPick.onDidTriggerButton(async (button) => {
-      if (button.tooltip === "View PRs from another remote") {
-        const remotes = await provider.getRemotes();
-        if (remotes.length === 0) {
-          vscode.window.showInformationMessage("No GitHub remotes found.");
-          return;
-        }
-
-        const remoteQuickPick = vscode.window.createQuickPick<vscode.QuickPickItem & { remote: { name: string; owner: string; repo: string } | undefined }>();
-        remoteQuickPick.placeholder = "Select a remote to view its Pull Requests";
-
-        const remoteItems = remotes.map(r => ({
-          label: `$(repo) ${r.name}`,
-          description: `${r.owner}/${r.repo}`,
-          remote: r
-        }));
-
-        // Add option to return to default remote if currently viewing another
-        if (currentRemote) {
-          const defaultItem: vscode.QuickPickItem & { remote: { name: string; owner: string; repo: string } | undefined } = {
-            label: "$(home) Default remote",
-            description: "Return to viewing PRs for the current repository",
-            remote: undefined
-          };
-          remoteItems.unshift(defaultItem as any);
-        }
-
-        remoteQuickPick.items = remoteItems;
-        remoteQuickPick.show();
-
-        remoteQuickPick.onDidAccept(async () => {
-          const selected = remoteQuickPick.selectedItems[0];
-          if (selected) {
-            remoteQuickPick.hide();
-
-            if (currentRemote !== selected.remote) {
-              currentRemote = selected.remote;
-              itemsMap.clear();
-              quickPick.items = [];
-              quickPick.placeholder = currentRemote
-                ? `Pull Requests for ${currentRemote.owner}/${currentRemote.repo} (${currentRemote.name})`
-                : "Search Pull Requests...";
-              fetchPRs(currentRemote);
-            }
-          }
-        });
-
-        remoteQuickPick.onDidHide(() => remoteQuickPick.dispose());
-      }
-    });
 
     quickPick.onDidAccept(async () => {
       const selected = quickPick.selectedItems[0];

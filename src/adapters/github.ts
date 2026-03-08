@@ -82,16 +82,20 @@ export class GitHubAdapter implements PullRequestProvider {
       await this.exec("git", ["rev-parse", "--is-inside-work-tree"]);
       const remotes = await this.exec("git", ["remote", "-v"]);
 
+      const preferredRemote =
+        this.configurationProvider.get<string>("pullgod", "preferredRemote") ||
+        "origin";
+
       const lines = remotes.split("\n");
-      // Find origin first
-      const originLine = lines.find(
+      // Find preferred remote first
+      const preferredLine = lines.find(
         (l) =>
-          l.trim().startsWith("origin") &&
+          l.trim().startsWith(preferredRemote) &&
           l.includes("github.com") &&
           l.includes("(fetch)"),
       );
-      if (originLine) {
-        const match = originLine.match(/github\.com[:/]([^\/]+)\/([^\s]+)/);
+      if (preferredLine) {
+        const match = preferredLine.match(/github\.com[:/]([^\/]+)\/([^\s]+)/);
         if (match) {
           let repo = match[2];
           if (repo.endsWith(".git")) {

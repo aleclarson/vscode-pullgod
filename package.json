@@ -28,6 +28,11 @@
             "Open in an IDE browser tab"
           ],
           "description": "Control whether to open PRs in the system browser or an IDE browser tab."
+        },
+        "pullgod.preferredRemote": {
+          "type": "string",
+          "default": "origin",
+          "description": "The preferred git remote name to fetch pull requests from (e.g., 'origin', 'upstream')."
         }
       }
     },
@@ -35,6 +40,10 @@
       {
         "command": "pullgod.viewPullRequests",
         "title": "Pullgod: View Pull Requests"
+      },
+      {
+        "command": "pullgod.viewPullRequestsForRemote",
+        "title": "Pullgod: View Pull Requests for Remote..."
       },
       {
         "command": "pullgod.openInBrowser",

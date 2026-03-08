@@ -4,6 +4,7 @@ import { PRCache } from "./cache";
 import { openInBrowser } from "./commands/openInBrowser";
 import { copyPRSummary } from "./commands/copyPRSummary";
 import { viewPullRequests } from "./commands/viewPullRequests";
+import { viewPullRequestsForRemote } from "./commands/viewPullRequestsForRemote";
 import { updatePriorities } from "./commands/updatePriorities";
 import { replyToPR } from "./commands/replyToPR";
 import { closePR } from "./commands/closePR";
@@ -70,6 +71,13 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(
       "pullgod.viewPullRequests",
       viewPullRequests(provider, cache, outputChannel),
+    ),
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "pullgod.viewPullRequestsForRemote",
+      viewPullRequestsForRemote(provider, cache, outputChannel),
     ),
   );
 
