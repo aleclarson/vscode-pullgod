@@ -7,7 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [1.12.0]
 
 ### Added
-- Support filtering pull requests by PR number in QuickPicks
+- Support filtering pull requests by PR number and description in QuickPicks
 
 ## [1.11.0] - 2026-02-27
 
