@@ -57,7 +57,7 @@ export function activate(context: vscode.ExtensionContext) {
   };
 
   let lastViewedAt = Date.now();
-  const inactivityLimit = 5 * 60 * 1000; // 5 minutes
+  const inactivityLimit = 15 * 60 * 1000; // 15 minutes
 
   const interval = setInterval(() => {
     if (Date.now() - lastViewedAt > inactivityLimit) {
