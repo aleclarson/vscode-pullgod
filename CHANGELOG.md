@@ -4,6 +4,11 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.12.0]
+
+### Added
+- Support filtering pull requests by PR number and description in QuickPicks
+
 ## [1.11.0] - 2026-02-27
 
 ### Added
