@@ -4,6 +4,11 @@ All notable changes to the "pullgod" extension will be documented in this file.
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.12.1]
+
+### Fixed
+- When sorting PRs in the quick pick, ignore "last checked out at" timestamps that are older than 72 hours (treat them as never having been checked out for the purposes of sorting).
+
 ## [1.12.0] - 2026-03-08
 
 ### Added
