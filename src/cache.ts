@@ -93,7 +93,15 @@ export class PRCache {
   }
 
   getLastCheckedOut(prNumber: number): number | undefined {
-    return this.cache.checkoutTimes[prNumber];
+    const timestamp = this.cache.checkoutTimes[prNumber];
+    if (timestamp) {
+      // Ignore checkout times older than 72 hours
+      const seventyTwoHoursMs = 72 * 60 * 60 * 1000;
+      if (Date.now() - timestamp > seventyTwoHoursMs) {
+        return undefined;
+      }
+    }
+    return timestamp;
   }
 
   private save(): Promise<void> {

@@ -136,4 +136,25 @@ suite("PRCache Test Suite", () => {
     assert.ok(cached);
     assert.strictEqual(cached![0].title, "Test PR");
   });
+
+  test("getLastCheckedOut should return undefined for timestamps older than 72 hours", async () => {
+    const cache = new PRCache(tempDir);
+    const now = Date.now();
+    const twoHoursAgo = now - 2 * 60 * 60 * 1000;
+    const fourDaysAgo = now - 4 * 24 * 60 * 60 * 1000;
+
+    await cache.setLastCheckedOut(1, twoHoursAgo);
+    await cache.setLastCheckedOut(2, fourDaysAgo);
+
+    assert.strictEqual(
+      cache.getLastCheckedOut(1),
+      twoHoursAgo,
+      "Should return timestamp for recent checkout",
+    );
+    assert.strictEqual(
+      cache.getLastCheckedOut(2),
+      undefined,
+      "Should return undefined for checkout older than 72 hours",
+    );
+  });
 });
